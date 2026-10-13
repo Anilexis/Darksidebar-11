@@ -145,6 +145,13 @@ foreach ($d in $disks) {
 $lastDiskBarY = $startY + (($idx - 1) * $step) + 14
 $divider4Y = $lastDiskBarY + 23
 $hwTitleY = $divider4Y + 20
+$hwCpuY = $hwTitleY + 25
+$hwCpuBarY = $hwTitleY + 39
+$hwRamY = $hwTitleY + 48
+$hwRamBarY = $hwTitleY + 62
+$hwGpuY = $hwTitleY + 71
+$hwGpuBarY = $hwTitleY + 85
+$hwVramY = $hwTitleY + 93
 
 # 1. Write separate variables file (disks-vars.inc) - SAFE FOR SETTINGS.INI (NO METERS!)
 $varsText = @"
@@ -152,13 +159,13 @@ $varsText = @"
 DisksCount=$idx
 Divider4Y=$divider4Y
 HardwareTitleY=$hwTitleY
-HardwareCpuY=($hwTitleY + 25)
-HardwareCpuBarY=($hwTitleY + 39)
-HardwareRamY=($hwTitleY + 48)
-HardwareRamBarY=($hwTitleY + 62)
-HardwareGpuY=($hwTitleY + 71)
-HardwareGpuBarY=($hwTitleY + 85)
-HardwareVramY=($hwTitleY + 93)
+HardwareCpuY=$hwCpuY
+HardwareCpuBarY=$hwCpuBarY
+HardwareRamY=$hwRamY
+HardwareRamBarY=$hwRamBarY
+HardwareGpuY=$hwGpuY
+HardwareGpuBarY=$hwGpuBarY
+HardwareVramY=$hwVramY
 "@
 
 [System.IO.File]::WriteAllText($targetVars, $varsText, [System.Text.Encoding]::GetEncoding(1251))

@@ -226,36 +226,8 @@ namespace NvBridgePlugin {
         }
 
         static void InitFrameView() {
-            try {
-                string dllPath = @"C:\Program Files\NVIDIA Corporation\FrameViewSDK\bin\FvSDK_x64.dll";
-                if (!File.Exists(dllPath)) return;
-
-                IntPtr hModule = LoadLibrary(dllPath);
-                if (hModule == IntPtr.Zero) return;
-
-                IntPtr pQi = GetProcAddress(hModule, "fv_QueryInterface");
-                if (pQi == IntPtr.Zero) return;
-
-                var fvQi = Marshal.GetDelegateForFunctionPointer<FvQueryInterfaceDelegate>(pQi);
-                var fvInit = Marshal.GetDelegateForFunctionPointer<FvInitDelegate>(fvQi(7));
-                var fvCreateSession = Marshal.GetDelegateForFunctionPointer<FvCreateSessionDelegate>(fvQi(0));
-                fvDestroySession = Marshal.GetDelegateForFunctionPointer<FvDestroySessionDelegate>(fvQi(1));
-                var fvEnableMetrics = Marshal.GetDelegateForFunctionPointer<FvEnableMetricsDelegate>(fvQi(2));
-                fvSampleData = Marshal.GetDelegateForFunctionPointer<FvSampleDataDelegate>(fvQi(3));
-                fvReadData = Marshal.GetDelegateForFunctionPointer<FvReadDataDelegate>(fvQi(4));
-                var fvStartSession = Marshal.GetDelegateForFunctionPointer<FvStartSessionDelegate>(fvQi(5));
-                fvStopSession = Marshal.GetDelegateForFunctionPointer<FvStopSessionDelegate>(fvQi(6));
-
-                fvInit();
-                int rCreate = fvCreateSession(out fvSession);
-                if (rCreate == 0 && fvSession != IntPtr.Zero) {
-                    fvEnableMetrics(fvSession, new uint[] { eAvgFPS, eCPUPkgTemp }, 2);
-                    fvStartSession(fvSession);
-                    fvInitialized = true;
-                }
-            } catch {
-                fvInitialized = false;
-            }
+            // Disabled to guarantee 100% stability and prevent FvSDK heap corruption
+            fvInitialized = false;
         }
 
         static string GetProcessBaseName(int pid) {

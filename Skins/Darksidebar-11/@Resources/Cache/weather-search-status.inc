@@ -1,3 +1,3 @@
-﻿[Variables]
-WeatherSearchStatus=
-WeatherSearchFound=0
+[Variables]
+WeatherSearchStatus=
+WeatherSearchFound=0

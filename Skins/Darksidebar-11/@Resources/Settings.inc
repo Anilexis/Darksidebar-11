@@ -1,4 +1,4 @@
-﻿[Variables]
+[Variables]
 ; Global dimensions
 SkinWidth=240
 ContentWidth=216
@@ -57,7 +57,6 @@ WeatherUnits=metric
 
 ; Localization Settings
 Language=English
-@IncludeLanguage=#@#Languages\#Language#.inc
 
 ; Weather Temperature Unit (C or F)
 WeatherTempUnit=C

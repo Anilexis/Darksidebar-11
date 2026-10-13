@@ -1,7 +1,7 @@
 # Darksidebar-11 (Русская документация)
 
 <p align="center">
-  <img src="assets/preview.png" alt="Darksidebar-11 Preview" width="240" />
+  <img src="assets/preview-ru.png" alt="Darksidebar-11 Preview (RU)" width="240" />
 </p>
 
 <p align="center">

@@ -51,9 +51,10 @@ Copy-Item -Path "$skinsSource\@Resources\Plugins\NvBridge.dll" -Destination "$st
 # Для релизного пакета сбрасываем FirstRunDone=0
 $stagingSettings = Join-Path $stagingSkins "@Resources\Settings.inc"
 if (Test-Path $stagingSettings) {
-    $text = [System.IO.File]::ReadAllText($stagingSettings, [System.Text.Encoding]::UTF8)
+    $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+    $text = [System.IO.File]::ReadAllText($stagingSettings, $cp1251)
     $text = $text -replace '(?m)^FirstRunDone=.*$', 'FirstRunDone=0'
-    [System.IO.File]::WriteAllText($stagingSettings, $text, [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($stagingSettings, $text, $cp1251)
 }
 
 # 3. Формируем метаданные Rainmeter.tag
