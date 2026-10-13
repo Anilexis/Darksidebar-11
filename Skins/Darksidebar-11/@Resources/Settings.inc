@@ -39,20 +39,20 @@ FontSizeHuge=28
 ; USER CONFIGURATION (Configurable via Settings.ini GUI)
 ; ============================================================
 ; Display & Placement Settings
-MonitorTargetId=MONITOR\PHL04C3\{4d36e96e-e325-11ce-bfc1-08002be10318}\0003
-MonitorFriendlyName=Philips FTV
-MonitorFallbackDev=\\.\DISPLAY3
+MonitorTargetId=MONITOR\SAM0247\{4d36e96e-e325-11ce-bfc1-08002be10318}\0001
+MonitorFriendlyName=SyncMaster
+MonitorFallbackDev=\\.\DISPLAY2
 PlacementEdge=Right
 RightMargin=0
 TopMargin=0
 HideWhenTargetMissing=0
 
 ; Weather Settings (Default: London / Greenwich; auto-detected on first run)
-WeatherCity=Тюмень
-WeatherLat=57.1522
-WeatherLon=65.5272
-WeatherCountryCode=RU
-WeatherCountryName=Россия
+WeatherCity=Warsaw
+WeatherLat=52.2298
+WeatherLon=21.0118
+WeatherCountryCode=PL
+WeatherCountryName=Poland
 WeatherUnits=metric
 
 ; Localization Settings

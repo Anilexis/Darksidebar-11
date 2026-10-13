@@ -141,15 +141,23 @@ public class AlignHelper {
 
                 if (match) {
                     workHeight = (mi.rcWork.bottom - mi.rcWork.top) - topMargin;
-                    if (workHeight < 600) workHeight = 976;
+
+                    double scale = 1.0;
+                    if (workHeight < 950) {
+                        scale = Math.Round((double)workHeight / 976.0, 3);
+                        if (scale < 0.60) scale = 0.60;
+                    }
+
+                    int effPanelWidth = (int)Math.Round(panelWidth * scale);
 
                     if (string.Equals(placementEdge, "Left", StringComparison.OrdinalIgnoreCase)) {
                         targetX = mi.rcWork.left + rightMargin;
                     } else {
-                        targetX = mi.rcWork.right - panelWidth - rightMargin;
+                        targetX = mi.rcWork.right - effPanelWidth - rightMargin;
                     }
                     targetY = mi.rcWork.top + topMargin;
                     found = true;
+                    targetScale = scale;
                     return false;
                 }
             }
@@ -157,9 +165,12 @@ public class AlignHelper {
         }, IntPtr.Zero);
 
         if (found) {
+            string scaleStr = targetScale.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture);
+            int baseHeight = (targetScale < 0.99) ? (int)Math.Round(workHeight / targetScale) : workHeight;
             string bang = string.Format(
-                "[!SetVariable SkinHeight {0} \"Darksidebar-11\\Sidebar\"][!UpdateMeter MeterBackground \"Darksidebar-11\\Sidebar\"][!Move {1} {2} \"Darksidebar-11\\Sidebar\"][!ZPos 0 \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
-                workHeight, targetX, targetY
+                System.Globalization.CultureInfo.InvariantCulture,
+                "[!SetVariable UiScale {0} \"Darksidebar-11\\Sidebar\"][!SetVariable SkinHeight {1} \"Darksidebar-11\\Sidebar\"][!UpdateMeter * \"Darksidebar-11\\Sidebar\"][!Move {2} {3} \"Darksidebar-11\\Sidebar\"][!ZPos 0 \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
+                scaleStr, baseHeight, targetX, targetY
             );
             SendBang(bang);
         } else {
@@ -168,6 +179,7 @@ public class AlignHelper {
             }
         }
     }
+    static double targetScale = 1.0;
 }
 '@
 
