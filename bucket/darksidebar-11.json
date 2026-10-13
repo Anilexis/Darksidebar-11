@@ -1,0 +1,43 @@
+{
+    "version": "1.0.0",
+    "description": "Modern hardware-accelerated multifunctional desktop sidebar for Rainmeter on Windows 11",
+    "homepage": "https://github.com/Anilexis/Darksidebar-11",
+    "license": "MIT",
+    "depends": "rainmeter",
+    "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v1.0.0/Darksidebar-11-v1.0.0.rmskin",
+    "hash": "152265A61CF0B48BF7F625C984EDEE3595A7347101433D0654C287F1D8856B63",
+    "installer": {
+        "script": [
+            "$rainmeterPath = \"$env:ProgramFiles\\Rainmeter\"",
+            "if (-not (Test-Path $rainmeterPath)) { $rainmeterPath = \"$env:ProgramFiles(x86)\\Rainmeter\" }",
+            "$skinInstaller = Join-Path $rainmeterPath 'SkinInstaller.exe'",
+            "if (Test-Path $skinInstaller) {",
+            "    Start-Process -FilePath $skinInstaller -ArgumentList @('/SILENT', \"`\"$dir\\Darksidebar-11-v$version.rmskin`\"\") -Wait",
+            "} else {",
+            "    Add-Type -AssemblyName System.IO.Compression.FileSystem",
+            "    $zip = [System.IO.Compression.ZipFile]::OpenRead(\"$dir\\Darksidebar-11-v$version.rmskin\")",
+            "    $skinsDest = \"$env:USERPROFILE\\Documents\\Rainmeter\\Skins\"",
+            "    $pluginsDest = \"$env:APPDATA\\Rainmeter\\Plugins\"",
+            "    foreach ($entry in $zip.Entries) {",
+            "        if ($entry.FullName.StartsWith('Skins/')) {",
+            "            $rel = $entry.FullName.Substring(6)",
+            "            $target = Join-Path $skinsDest $rel",
+            "            if ($entry.FullName.EndsWith('/')) { New-Item -ItemType Directory -Path $target -Force | Out-Null }",
+            "            else {",
+            "                New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null",
+            "                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)",
+            "            }",
+            "        } elseif ($entry.FullName -eq 'Plugins/64bit/NvBridge.dll') {",
+            "            New-Item -ItemType Directory -Path $pluginsDest -Force | Out-Null",
+            "            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, (Join-Path $pluginsDest 'NvBridge.dll'), $true)",
+            "        }",
+            "    }",
+            "    $zip.Dispose()",
+            "}"
+        ]
+    },
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v$version/Darksidebar-11-v$version.rmskin"
+    }
+}

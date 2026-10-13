@@ -1,0 +1,26 @@
+# Build & compiler artifacts
+bin/
+obj/
+*.user
+*.suo
+*.useros
+*.sln.docstates
+dist/
+
+# Diagnostics and local experimental files
+diagnostics/
+gadgets.png
+LocalAgent_FunctionalSidebar_RU.md
+STATUS.md
+PLAN.md
+THIRD-PARTY-NOTICES.md
+*.log
+*.tmp
+*.bak
+
+# OS & Editor files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
