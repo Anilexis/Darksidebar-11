@@ -1,5 +1,4 @@
-# update-disks.ps1
-# Динамическая генерация накопителей под реальный состав ПК
+# Dynamic generation of storage drives for Darksidebar-11
 param(
     [string]$CacheDir = (Join-Path (Split-Path $PSScriptRoot) "Cache"),
     [switch]$IncludeRemovable = $false,
@@ -76,7 +75,7 @@ $idx = 0
 foreach ($d in $disks) {
     $letter = $d.DeviceID.Substring(0, 1).ToUpper()
     $vol = $d.VolumeName
-    $label = if ([string]::IsNullOrWhiteSpace($vol)) { "Диск ($letter`:)" } else { "$vol ($letter`:)" }
+    $label = if ([string]::IsNullOrWhiteSpace($vol)) { "$letter`:" } else { "$vol ($letter`:)" }
     $curY = $startY + ($idx * $step)
     $barY = $curY + 14
 

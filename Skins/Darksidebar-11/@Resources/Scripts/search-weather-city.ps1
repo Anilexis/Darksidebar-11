@@ -1,10 +1,11 @@
-﻿# search-weather-city.ps1
+# search-weather-city.ps1
 # Поиск города через Open-Meteo Geocoding API и сохранение координат и страны в Settings.inc
 param(
     [string]$Query = ""
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls
 
 $scriptsDir = $PSScriptRoot
 $resourcesDir = Split-Path $scriptsDir
@@ -20,11 +21,25 @@ $currentCity = "London"
 $langCode = "ru"
 
 if (Test-Path $settingsPath) {
-    $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
-    $lines = [System.IO.File]::ReadAllLines($settingsPath, $cp1251)
-    foreach ($line in $lines) {
-        if ($line -match '^\s*WeatherCity\s*=\s*(.*?)\s*$') { $currentCity = $Matches[1].Trim() }
-        if ($line -match '^\s*Language\s*=\s*English') { $langCode = "en" }
+    $bytes = [System.IO.File]::ReadAllBytes($settingsPath)
+    $utf8Text = [System.Text.Encoding]::UTF8.GetString($bytes)
+    $cp1251Text = [System.Text.Encoding]::GetEncoding(1251).GetString($bytes)
+    
+    $cityCandidate = ""
+    if ($utf8Text -match '(?m)^\s*WeatherCity\s*=\s*(.*?)\s*$') {
+        $cityCandidate = $Matches[1].Trim()
+    }
+    
+    if ($cityCandidate -match '^[A-Za-z0-9\s\.\-]+$' -or ($cityCandidate -match '[\u0400-\u04FF]' -and $cityCandidate -notmatch '[РЎ][\x80-\xBF]')) {
+        $currentCity = $cityCandidate
+    } else {
+        if ($cp1251Text -match '(?m)^\s*WeatherCity\s*=\s*(.*?)\s*$') {
+            $currentCity = $Matches[1].Trim()
+        }
+    }
+    
+    if ($utf8Text -match '(?m)^\s*Language\s*=\s*English' -or $cp1251Text -match '(?m)^\s*Language\s*=\s*English') {
+        $langCode = "en"
     }
 }
 
@@ -52,32 +67,31 @@ if ($Query -match '^\s*([+-]?\d+(?:\.\d+)?)[,\s]+([+-]?\d+(?:\.\d+)?)\s*$') {
 } else {
     # 2. Поиск города через Open-Meteo Geocoding API
     try {
+        $searchLang = if ($Query -match '[\u0400-\u04FF]') { "ru" } else { $langCode }
         $encoded = [Uri]::EscapeDataString($Query)
-        $url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=$langCode&format=json"
-        
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers.Add("User-Agent", "Mozilla/5.0 Darksidebar-11/1.0.0")
-        $wc.Encoding = [System.Text.Encoding]::UTF8
-        $jsonStr = $wc.DownloadString($url)
-
-        Add-Type -AssemblyName System.Web.Extensions
-        $jss = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-        $data = $jss.DeserializeObject($jsonStr)
-
-        if ($data -and $data["results"] -and $data["results"].Length -gt 0) {
-            $first = $data["results"][0]
-            $cityName = [string]$first["name"]
-            $lat = [double]$first["latitude"]
-            $lon = [double]$first["longitude"]
-            if ($first.ContainsKey("country_code") -and $first["country_code"]) { 
-                $countryCode = [string]$first["country_code"].ToString().ToUpperInvariant() 
+        $url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=$searchLang&format=json"
+        $res = Invoke-RestMethod -Uri $url -Headers @{ "User-Agent" = "Mozilla/5.0 Darksidebar-11/1.0.0" } -TimeoutSec 5 -ErrorAction Stop
+        $items = @($res.results)
+        if ($items.Count -eq 0) {
+            $altLang = if ($searchLang -eq "ru") { "en" } else { "ru" }
+            $url2 = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=1&language=$altLang&format=json"
+            $res2 = Invoke-RestMethod -Uri $url2 -Headers @{ "User-Agent" = "Mozilla/5.0 Darksidebar-11/1.0.0" } -TimeoutSec 5 -ErrorAction SilentlyContinue
+            if ($res2 -and $res2.results) { $items = @($res2.results) }
+        }
+        if ($items.Count -gt 0) {
+            $first = $items[0]
+            $cityName = [string]$first.name
+            $lat = [double]$first.latitude
+            $lon = [double]$first.longitude
+            if ($first.country_code) { 
+                $countryCode = [string]$first.country_code.ToUpperInvariant() 
             }
-            if ($first.ContainsKey("country") -and $first["country"]) { 
-                $countryName = [string]$first["country"] 
+            if ($first.country) { 
+                $countryName = [string]$first.country 
             }
         }
     } catch {
-        Write-Warning "Geocoding error: $($_.Exception.Message)"
+        Write-Host "Geocoding error: $($_.Exception.Message)"
     }
 }
 

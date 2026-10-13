@@ -225,9 +225,59 @@ namespace NvBridgePlugin {
             }
         }
 
+        static CPUPkgTemp_v1[] tempBuffer = new CPUPkgTemp_v1[1];
+        static GCHandle tempHandle;
+        static IntPtr pTempBuf = IntPtr.Zero;
+
+        static AvgFPS_v1[] fpsBuffer = new AvgFPS_v1[16];
+        static GCHandle fpsHandle;
+        static IntPtr pFpsBuf = IntPtr.Zero;
+
         static void InitFrameView() {
-            // Disabled to guarantee 100% stability and prevent FvSDK heap corruption
-            fvInitialized = false;
+            try {
+                string dllPath = @"C:\Program Files\NVIDIA Corporation\FrameViewSDK\bin\FvSDK_x64.dll";
+                if (!File.Exists(dllPath)) return;
+
+                IntPtr hModule = LoadLibrary(dllPath);
+                if (hModule == IntPtr.Zero) return;
+
+                IntPtr pQi = GetProcAddress(hModule, "fv_QueryInterface");
+                if (pQi == IntPtr.Zero) return;
+
+                var fvQi = Marshal.GetDelegateForFunctionPointer<FvQueryInterfaceDelegate>(pQi);
+                var fvInit = Marshal.GetDelegateForFunctionPointer<FvInitDelegate>(fvQi(7));
+                var fvCreateSession = Marshal.GetDelegateForFunctionPointer<FvCreateSessionDelegate>(fvQi(0));
+                fvDestroySession = Marshal.GetDelegateForFunctionPointer<FvDestroySessionDelegate>(fvQi(1));
+                var fvEnableMetrics = Marshal.GetDelegateForFunctionPointer<FvEnableMetricsDelegate>(fvQi(2));
+                fvSampleData = Marshal.GetDelegateForFunctionPointer<FvSampleDataDelegate>(fvQi(3));
+                fvReadData = Marshal.GetDelegateForFunctionPointer<FvReadDataDelegate>(fvQi(4));
+                var fvStartSession = Marshal.GetDelegateForFunctionPointer<FvStartSessionDelegate>(fvQi(5));
+                fvStopSession = Marshal.GetDelegateForFunctionPointer<FvStopSessionDelegate>(fvQi(6));
+
+                fvInit();
+                int rCreate = fvCreateSession(out fvSession);
+                if (rCreate == 0 && fvSession != IntPtr.Zero) {
+                    fvEnableMetrics(fvSession, new uint[] { eAvgFPS, eCPUPkgTemp }, 2);
+                    fvStartSession(fvSession);
+
+                    tempBuffer[0].baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
+                    tempBuffer[0].version = (uint)(Marshal.SizeOf<CPUPkgTemp_v1>() | (1 << 16));
+                    tempHandle = GCHandle.Alloc(tempBuffer, GCHandleType.Pinned);
+                    pTempBuf = tempHandle.AddrOfPinnedObject();
+
+                    for (int i = 0; i < fpsBuffer.Length; i++) {
+                        fpsBuffer[i].baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
+                        fpsBuffer[i].version = (uint)(Marshal.SizeOf<AvgFPS_v1>() | (1 << 16));
+                        fpsBuffer[i].mFPS.version = (uint)(Marshal.SizeOf<FPS_v1>() | (1 << 16));
+                    }
+                    fpsHandle = GCHandle.Alloc(fpsBuffer, GCHandleType.Pinned);
+                    pFpsBuf = fpsHandle.AddrOfPinnedObject();
+
+                    fvInitialized = true;
+                }
+            } catch {
+                fvInitialized = false;
+            }
         }
 
         static string GetProcessBaseName(int pid) {
@@ -296,7 +346,7 @@ namespace NvBridgePlugin {
 
                     // 2. FrameView SDK
                     if (!fvInitialized) InitFrameView();
-                    if (fvInitialized && fvSession != IntPtr.Zero && fvSampleData != null && fvReadData != null) {
+                    if (fvInitialized && fvSession != IntPtr.Zero && fvSampleData != null && fvReadData != null && pTempBuf != IntPtr.Zero) {
                         try {
                             fvSampleData(fvSession, 0);
 
@@ -304,36 +354,13 @@ namespace NvBridgePlugin {
                             Samples sTemp = new Samples {
                                 version = (uint)(Marshal.SizeOf<Samples>() | (1 << 16)),
                                 type = eCPUPkgTemp,
-                                mNumSamples = IntPtr.Zero,
-                                mData = IntPtr.Zero
+                                mNumSamples = (IntPtr)1,
+                                mData = pTempBuf
                             };
 
                             if (fvReadData(fvSession, ref sTemp, 1) == 0) {
-                                long numTemp = sTemp.mNumSamples.ToInt64();
-                                if (numTemp > 0) {
-                                    int sz = Marshal.SizeOf<CPUPkgTemp_v1>();
-                                    sTemp.mData = Marshal.AllocHGlobal((int)(numTemp * sz));
-                                    try {
-                                        for (int i = 0; i < numTemp; i++) {
-                                            IntPtr ptr = new IntPtr(sTemp.mData.ToInt64() + i * sz);
-                                            CPUPkgTemp_v1 initItem = new CPUPkgTemp_v1();
-                                            initItem.baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
-                                            initItem.version = (uint)(Marshal.SizeOf<CPUPkgTemp_v1>() | (1 << 16));
-                                            Marshal.StructureToPtr(initItem, ptr, false);
-                                        }
-
-                                        if (fvReadData(fvSession, ref sTemp, 1) == 0) {
-                                            for (int i = 0; i < numTemp; i++) {
-                                                IntPtr ptr = new IntPtr(sTemp.mData.ToInt64() + i * sz);
-                                                CPUPkgTemp_v1 item = Marshal.PtrToStructure<CPUPkgTemp_v1>(ptr);
-                                                if (item.mCPUPkgTemp > 0) {
-                                                    CpuTemp = Math.Round(item.mCPUPkgTemp);
-                                                }
-                                            }
-                                        }
-                                    } finally {
-                                        Marshal.FreeHGlobal(sTemp.mData);
-                                    }
+                                if (tempBuffer[0].mCPUPkgTemp > 0) {
+                                    CpuTemp = Math.Round(tempBuffer[0].mCPUPkgTemp);
                                 }
                             }
                         } catch { }
@@ -347,48 +374,53 @@ namespace NvBridgePlugin {
                             }
 
                             double detectedFps = 0;
-                            if (fgPid > 0) {
+                            if (fgPid > 0 && pFpsBuf != IntPtr.Zero) {
                                 string fgName = GetProcessBaseName((int)fgPid);
                                 if (!IsNonGameProcess(fgName)) {
                                     Samples sFps = new Samples {
                                         version = (uint)(Marshal.SizeOf<Samples>() | (1 << 16)),
                                         type = eAvgFPS,
-                                        mNumSamples = IntPtr.Zero,
-                                        mData = IntPtr.Zero
+                                        mNumSamples = (IntPtr)fpsBuffer.Length,
+                                        mData = pFpsBuf
                                     };
 
                                     if (fvReadData(fvSession, ref sFps, 1) == 0) {
-                                        long numFps = sFps.mNumSamples.ToInt64();
-                                        if (numFps > 0) {
-                                            int sz = Marshal.SizeOf<AvgFPS_v1>();
-                                            sFps.mData = Marshal.AllocHGlobal((int)(numFps * sz));
-                                            try {
-                                                for (int i = 0; i < numFps; i++) {
-                                                    IntPtr ptr = new IntPtr(sFps.mData.ToInt64() + i * sz);
-                                                    AvgFPS_v1 initItem = new AvgFPS_v1();
-                                                    initItem.baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
-                                                    initItem.version = (uint)(Marshal.SizeOf<AvgFPS_v1>() | (1 << 16));
-                                                    initItem.mFPS.version = (uint)(Marshal.SizeOf<FPS_v1>() | (1 << 16));
-                                                    Marshal.StructureToPtr(initItem, ptr, false);
-                                                }
-
-                                                if (fvReadData(fvSession, ref sFps, 1) == 0) {
-                                                    for (int i = 0; i < numFps; i++) {
-                                                        IntPtr ptr = new IntPtr(sFps.mData.ToInt64() + i * sz);
-                                                        AvgFPS_v1 item = Marshal.PtrToStructure<AvgFPS_v1>(ptr);
-                                                        if ((int)item.mFPS.PID == (int)fgPid && item.mFPS.AvgFPS > 0) {
-                                                            detectedFps = Math.Round(item.mFPS.AvgFPS);
-                                                        }
-                                                    }
-                                                }
-                                            } finally {
-                                                Marshal.FreeHGlobal(sFps.mData);
+                                        long count = sFps.mNumSamples.ToInt64();
+                                        if (count > fpsBuffer.Length) count = fpsBuffer.Length;
+                                        for (int i = 0; i < count; i++) {
+                                            if ((int)fpsBuffer[i].mFPS.PID == (int)fgPid && fpsBuffer[i].mFPS.AvgFPS > 0) {
+                                                detectedFps = Math.Round(fpsBuffer[i].mFPS.AvgFPS);
+                                                break;
                                             }
                                         }
                                     }
                                 }
                             }
                             Fps = detectedFps;
+                        } catch { }
+                    }
+
+                    // 3. Fallback to LibreHardwareMonitor web server if CPU temp not available
+                    if (CpuTemp <= 0) {
+                        try {
+                            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMilliseconds(350) };
+                            string json = client.GetStringAsync("http://127.0.0.1:8085/data.json").GetAwaiter().GetResult();
+                            int idx = json.IndexOf("\"CPU Package\"");
+                            if (idx < 0) idx = json.IndexOf("\"Core Average\"");
+                            if (idx < 0) idx = json.IndexOf("\"CPU Total\"");
+                            if (idx >= 0) {
+                                int valIdx = json.IndexOf("\"Value\":", idx);
+                                if (valIdx >= 0 && valIdx - idx < 200) {
+                                    int start = json.IndexOf('"', valIdx + 8) + 1;
+                                    int end = json.IndexOf('°', start);
+                                    if (start > 0 && end > start) {
+                                        string str = json.Substring(start, end - start).Trim().Replace(',', '.');
+                                        if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double t) && t > 0) {
+                                            CpuTemp = Math.Round(t);
+                                        }
+                                    }
+                                }
+                            }
                         } catch { }
                     }
                 } catch { }
@@ -400,8 +432,13 @@ namespace NvBridgePlugin {
             if (fvInitialized && fvSession != IntPtr.Zero) {
                 try {
                     fvStopSession?.Invoke(fvSession);
-                    fvDestroySession?.Invoke(fvSession);
                 } catch { }
+            }
+            if (tempHandle.IsAllocated) {
+                try { tempHandle.Free(); } catch { }
+            }
+            if (fpsHandle.IsAllocated) {
+                try { fpsHandle.Free(); } catch { }
             }
             if (nvmlInitialized) {
                 try { NvmlShutdown(); } catch { }

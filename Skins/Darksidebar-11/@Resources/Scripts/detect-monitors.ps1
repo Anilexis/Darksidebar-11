@@ -1,6 +1,7 @@
 # detect-monitors.ps1
-# Обнаружение активных мониторов, их PnP ID, дружественных имен и геометрии
+# Обнаружение активных мониторов, их PnP ID, дружественных имен и циклическое переключение (prev / next)
 param(
+    [string]$Direction = "",
     [switch]$AsJson = $false
 )
 
@@ -47,18 +48,18 @@ public class MonitorDetector {
     public static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
 
     public class MonitorEntry {
-        public string DeviceName { get; set; } = "";
-        public string PnpId { get; set; } = "";
-        public string FriendlyName { get; set; } = "";
-        public bool IsPrimary { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public int WorkLeft { get; set; }
-        public int WorkTop { get; set; }
-        public int WorkRight { get; set; }
-        public int WorkBottom { get; set; }
-        public int WorkWidth { get; set; }
-        public int WorkHeight { get; set; }
+        public string DeviceName;
+        public string PnpId;
+        public string FriendlyName;
+        public bool IsPrimary;
+        public int Width;
+        public int Height;
+        public int WorkLeft;
+        public int WorkTop;
+        public int WorkRight;
+        public int WorkBottom;
+        public int WorkWidth;
+        public int WorkHeight;
     }
 
     public static List<MonitorEntry> DetectAll() {
@@ -69,20 +70,20 @@ public class MonitorDetector {
             mi.cbSize = Marshal.SizeOf(typeof(MONITORINFOEX));
             if (GetMonitorInfo(hMon, ref mi)) {
                 string dev = mi.szDevice.Trim();
-                var entry = new MonitorEntry {
-                    DeviceName = dev,
-                    IsPrimary = (mi.dwFlags & 1) != 0,
-                    Width = mi.rcMonitor.right - mi.rcMonitor.left,
-                    Height = mi.rcMonitor.bottom - mi.rcMonitor.top,
-                    WorkLeft = mi.rcWork.left,
-                    WorkTop = mi.rcWork.top,
-                    WorkRight = mi.rcWork.right,
-                    WorkBottom = mi.rcWork.bottom,
-                    WorkWidth = mi.rcWork.right - mi.rcWork.left,
-                    WorkHeight = mi.rcWork.bottom - mi.rcWork.top
-                };
+                var entry = new MonitorEntry();
+                entry.DeviceName = dev;
+                entry.IsPrimary = (mi.dwFlags & 1) != 0;
+                entry.Width = mi.rcMonitor.right - mi.rcMonitor.left;
+                entry.Height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+                entry.WorkLeft = mi.rcWork.left;
+                entry.WorkTop = mi.rcWork.top;
+                entry.WorkRight = mi.rcWork.right;
+                entry.WorkBottom = mi.rcWork.bottom;
+                entry.WorkWidth = mi.rcWork.right - mi.rcWork.left;
+                entry.WorkHeight = mi.rcWork.bottom - mi.rcWork.top;
+                entry.PnpId = "";
+                entry.FriendlyName = "";
 
-                // Получаем аппаратный PnP ID через EnumDisplayDevices
                 var monDev = new DISPLAY_DEVICE();
                 monDev.cb = Marshal.SizeOf(monDev);
                 if (EnumDisplayDevices(dev, 0, ref monDev, 0)) {
@@ -106,7 +107,7 @@ if (-not ([System.Management.Automation.PSTypeName]'MonitorDetector').Type) {
 
 $monitors = [MonitorDetector]::DetectAll()
 
-# Пытаемся улучшить FriendlyName через реестр, если вернулся Generic PnP Monitor
+# Улучшаем FriendlyName через реестр, если вернулся Generic PnP Monitor
 foreach ($m in $monitors) {
     if ($m.FriendlyName -match 'Generic' -or [string]::IsNullOrWhiteSpace($m.FriendlyName)) {
         if ($m.PnpId -match '^MONITOR\\([^\\]+)') {
@@ -126,9 +127,67 @@ foreach ($m in $monitors) {
             } catch { }
         }
     }
+    if ([string]::IsNullOrWhiteSpace($m.FriendlyName)) {
+        $m.FriendlyName = if ($m.IsPrimary) { "Primary" } else { "Display $($m.DeviceName)" }
+    }
 }
 
-if ($AsJson) {
+$scriptsDir = $PSScriptRoot
+$resourcesDir = Split-Path $scriptsDir
+$settingsPath = Join-Path $resourcesDir "Settings.inc"
+
+if ($Direction -and $monitors.Count -gt 0) {
+    $curDev = "\\.\DISPLAY1"
+    $curPnp = ""
+    $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+
+    if (Test-Path $settingsPath) {
+        $lines = [System.IO.File]::ReadAllLines($settingsPath, $cp1251)
+        foreach ($line in $lines) {
+            if ($line -match '^\s*MonitorFallbackDev\s*=\s*(.*?)\s*$') { $curDev = $Matches[1].Trim() }
+            if ($line -match '^\s*MonitorTargetId\s*=\s*(.*?)\s*$') { $curPnp = $Matches[1].Trim() }
+        }
+    }
+
+    $idx = 0
+    for ($i = 0; $i -lt $monitors.Count; $i++) {
+        if ($monitors[$i].DeviceName -eq $curDev -or ($curPnp -and $monitors[$i].PnpId -eq $curPnp)) {
+            $idx = $i
+            break
+        }
+    }
+
+    if ($Direction.ToLowerInvariant() -eq "next") {
+        $nextIdx = ($idx + 1) % $monitors.Count
+    } else {
+        $nextIdx = ($idx - 1 + $monitors.Count) % $monitors.Count
+    }
+
+    $chosen = $monitors[$nextIdx]
+
+    if (Test-Path $settingsPath) {
+        $content = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
+        $content = $content -replace '(?m)^MonitorFallbackDev=.*$', "MonitorFallbackDev=$($chosen.DeviceName)"
+        $content = $content -replace '(?m)^MonitorFriendlyName=.*$', "MonitorFriendlyName=$($chosen.FriendlyName)"
+        $content = $content -replace '(?m)^MonitorTargetId=.*$', "MonitorTargetId=$($chosen.PnpId)"
+        [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
+    }
+
+    Write-Host "Cycled to monitor: $($chosen.FriendlyName) ($($chosen.DeviceName))"
+
+    # Вызываем интеллектуальное перемещение скина
+    $alignScript = Join-Path $scriptsDir "align-sidebar.ps1"
+    if (Test-Path $alignScript) {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $alignScript
+    }
+
+    # Обновляем скины в Rainmeter
+    $rmExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
+    if (Test-Path $rmExe) {
+        & $rmExe !Refresh "Darksidebar-11\Sidebar"
+        & $rmExe !Refresh "Darksidebar-11\Settings"
+    }
+} elseif ($AsJson) {
     $monitors | ConvertTo-Json -Depth 3
 } else {
     $monitors

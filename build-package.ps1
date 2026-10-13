@@ -1,4 +1,4 @@
-# build-package.ps1
+﻿# build-package.ps1
 # Автоматическая сборка релизного пакета Darksidebar-11.rmskin для GitHub Releases и Scoop
 param(
     [string]$Version = "1.0.0",
@@ -65,6 +65,8 @@ SkinName=$skinName
 Author=Anilexis
 Version=$Version
 Merge=0
+LoadType=Skin
+Load=$skinName\Sidebar\Sidebar.ini
 LoadSkin=$skinName\Sidebar\Sidebar.ini
 "@
 $tagPath = Join-Path $tempStaging "Rainmeter.tag"

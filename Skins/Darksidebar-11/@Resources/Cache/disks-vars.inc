@@ -1,11 +1,11 @@
 [Variables]
-DisksCount=1
-Divider4Y=673
-HardwareTitleY=693
-HardwareCpuY=(693 + 25)
-HardwareCpuBarY=(693 + 39)
-HardwareRamY=(693 + 48)
-HardwareRamBarY=(693 + 62)
-HardwareGpuY=(693 + 71)
-HardwareGpuBarY=(693 + 85)
-HardwareVramY=(693 + 93)
+DisksCount=6
+Divider4Y=783
+HardwareTitleY=803
+HardwareCpuY=828
+HardwareCpuBarY=842
+HardwareRamY=851
+HardwareRamBarY=865
+HardwareGpuY=874
+HardwareGpuBarY=888
+HardwareVramY=896
