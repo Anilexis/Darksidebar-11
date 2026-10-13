@@ -169,9 +169,6 @@ HardwareVramY=$hwVramY
 
 [System.IO.File]::WriteAllText($targetVars, $varsText, [System.Text.Encoding]::GetEncoding(1251))
 
-# 2. Append variables to disks-generated.inc for Sidebar.ini
-$sb.AppendLine("; Calculated position tokens for following sections") | Out-Null
-$sb.AppendLine($varsText) | Out-Null
 
 # Write disks-generated.inc in CP1251 so Rainmeter parses Russian disk labels with 0 mojibake
 [System.IO.File]::WriteAllText($targetInc, $sb.ToString(), [System.Text.Encoding]::GetEncoding(1251))

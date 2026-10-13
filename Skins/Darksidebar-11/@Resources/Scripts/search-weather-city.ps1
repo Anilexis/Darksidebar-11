@@ -1,4 +1,4 @@
-# search-weather-city.ps1
+﻿# search-weather-city.ps1
 # Поиск города через Open-Meteo Geocoding API и сохранение координат и страны в Settings.inc
 param(
     [string]$Query = ""
@@ -144,9 +144,3 @@ WeatherSearchFound=0
     Write-Host "Not found: $Query"
 }
 
-# Отправляем команды обновления в Rainmeter
-$rainmeterExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
-if (Test-Path $rainmeterExe) {
-    & $rainmeterExe !Refresh "Darksidebar-11\Sidebar"
-    & $rainmeterExe !Refresh "Darksidebar-11\Settings"
-}

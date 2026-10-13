@@ -39,8 +39,8 @@ FontSizeHuge=28
 ; USER CONFIGURATION (Configurable via Settings.ini GUI)
 ; ============================================================
 ; Display & Placement Settings
-MonitorTargetId=
-MonitorFriendlyName=Primary
+MonitorTargetId=MONITOR\MSI3DD0\{4d36e96e-e325-11ce-bfc1-08002be10318}\0004
+MonitorFriendlyName=MAG 341C OLED
 MonitorFallbackDev=\\.\DISPLAY1
 PlacementEdge=Right
 RightMargin=0
@@ -48,15 +48,15 @@ TopMargin=0
 HideWhenTargetMissing=0
 
 ; Weather Settings (Default: London / Greenwich; auto-detected on first run)
-WeatherCity=London
-WeatherLat=51.5074
-WeatherLon=-0.1278
-WeatherCountryCode=GB
-WeatherCountryName=United Kingdom
+WeatherCity=Тюмень
+WeatherLat=57.1522
+WeatherLon=65.5272
+WeatherCountryCode=RU
+WeatherCountryName=Россия
 WeatherUnits=metric
 
 ; Localization Settings
-Language=English
+Language=Russian
 
 ; Weather Temperature Unit (C or F)
 WeatherTempUnit=C
@@ -86,4 +86,4 @@ WeatherToolTip=#LangOpenWeather#
 HolidaysEnabled=1
 
 ; First run flag (0 = triggers IP auto-detection of location on first launch)
-FirstRunDone=0
+FirstRunDone=1

@@ -1,4 +1,4 @@
-# first-run.ps1
+﻿# first-run.ps1
 # Initial setup on first skin launch
 param()
 
@@ -45,8 +45,3 @@ if (Test-Path $alignSidebar) {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $alignSidebar
 }
 
-# 5. Refresh Rainmeter
-$rmExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
-if (Test-Path $rmExe) {
-    & $rmExe !Refresh "Darksidebar-11\Sidebar"
-}

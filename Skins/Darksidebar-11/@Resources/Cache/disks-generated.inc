@@ -1,5 +1,5 @@
 ; Auto-generated Disks topology for Darksidebar-11
-; Generated: 2026-10-13 21:02:08
+; Generated: 2026-10-13 21:41:42
 
 [MeasureTotalC]
 Measure=FreeDiskSpace
@@ -487,15 +487,3 @@ H=3
 BarColor=#ColorBarFill#
 BarOrientation=Horizontal
 
-; Calculated position tokens for following sections
-[Variables]
-DisksCount=6
-Divider4Y=783
-HardwareTitleY=803
-HardwareCpuY=828
-HardwareCpuBarY=842
-HardwareRamY=851
-HardwareRamBarY=865
-HardwareGpuY=874
-HardwareGpuBarY=888
-HardwareVramY=896

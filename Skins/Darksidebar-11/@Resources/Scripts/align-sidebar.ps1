@@ -1,4 +1,4 @@
-﻿# align-sidebar.ps1
+# align-sidebar.ps1
 # Интеллектуальное позиционирование Darksidebar-11 по аппаратному PnP ID монитора
 # Запускается по событию (запуск, смену мониторов, изменение разрешения) и мгновенно завершается (~0.15с).
 
@@ -64,27 +64,21 @@ public class AlignHelper {
 
     public static bool SendBang(string bang) {
         try {
-            IntPtr hDesk = OpenDesktop("default", 0, false, 0x100001FF);
-            if (hDesk != IntPtr.Zero) SetThreadDesktop(hDesk);
+            string rmExe = @"C:\Program Files\Rainmeter\Rainmeter.exe";
+            if (!System.IO.File.Exists(rmExe)) {
+                rmExe = @"C:\Program Files (x86)\Rainmeter\Rainmeter.exe";
+            }
+            if (System.IO.File.Exists(rmExe)) {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo {
+                    FileName = rmExe,
+                    Arguments = bang,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                return true;
+            }
         } catch { }
-
-        IntPtr hWnd = FindWindow("DummyRainWClass", "Rainmeter control window");
-        if (hWnd == IntPtr.Zero) return false;
-
-        byte[] bytes = System.Text.Encoding.Unicode.GetBytes(bang + "\0");
-        IntPtr pData = Marshal.AllocHGlobal(bytes.Length);
-        try {
-            Marshal.Copy(bytes, 0, pData, bytes.Length);
-            var cds = new COPYDATASTRUCT {
-                dwData = (IntPtr)1,
-                cbData = bytes.Length,
-                lpData = pData
-            };
-            SendMessage(hWnd, 0x004A, IntPtr.Zero, ref cds);
-            return true;
-        } finally {
-            Marshal.FreeHGlobal(pData);
-        }
+        return false;
     }
 
     public static void AlignSmart(

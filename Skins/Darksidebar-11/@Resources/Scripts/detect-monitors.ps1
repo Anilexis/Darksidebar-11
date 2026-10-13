@@ -1,4 +1,4 @@
-# detect-monitors.ps1
+﻿# detect-monitors.ps1
 # Обнаружение активных мониторов, их PnP ID, дружественных имен и циклическое переключение (prev / next)
 param(
     [string]$Direction = "",
@@ -181,13 +181,7 @@ if ($Direction -and $monitors.Count -gt 0) {
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $alignScript
     }
 
-    # Обновляем скины в Rainmeter
-    $rmExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
-    if (Test-Path $rmExe) {
-        & $rmExe !Refresh "Darksidebar-11\Sidebar"
-        & $rmExe !Refresh "Darksidebar-11\Settings"
-    }
-} elseif ($AsJson) {
+    } elseif ($AsJson) {
     $monitors | ConvertTo-Json -Depth 3
 } else {
     $monitors
