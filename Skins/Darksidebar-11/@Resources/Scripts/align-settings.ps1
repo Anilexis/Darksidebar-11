@@ -131,8 +131,6 @@ public class AlignSettingsHelper {
                 if (!match) {
                     if (!string.IsNullOrEmpty(fallbackDev) && dev.Equals(fallbackDev, StringComparison.OrdinalIgnoreCase)) {
                         match = true;
-                    } else if (w == 1280 && h == 1024) {
-                        match = true;
                     }
                 }
 
@@ -152,7 +150,7 @@ public class AlignSettingsHelper {
 
         if (found) {
             string bang = string.Format(
-                "[!Move {0} {1} \"Darksidebar-11\\Settings\"][!ZPos 1 \"Darksidebar-11\\Settings\"][!Show \"Darksidebar-11\\Settings\"][!Redraw \"Darksidebar-11\\Settings\"]",
+                "[!Move {0} {1} \"Darksidebar-11\\Settings\"][!ZPos 0 \"Darksidebar-11\\Settings\"][!Show \"Darksidebar-11\\Settings\"][!Redraw \"Darksidebar-11\\Settings\"]",
                 targetX, targetY
             );
             SendBang(bang);

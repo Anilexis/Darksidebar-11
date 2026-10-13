@@ -10,30 +10,73 @@ $settingsPath = Join-Path $resourcesDir "Settings.inc"
 
 if (-not (Test-Path $settingsPath)) { exit }
 
-Add-Type -AssemblyName System.Windows.Forms
+$csharp = @'
+using System;
+using System.Runtime.InteropServices;
 
-$dialog = New-Object System.Windows.Forms.OpenFileDialog
-if ($Target -eq "Calendar") {
-    $dialog.Title = "Выберите приложение календаря (.exe) / Select Calendar App"
-} else {
-    $dialog.Title = "Выберите приложение погоды (.exe) / Select Weather App"
+public class NativePicker {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+
+    [DllImport("comdlg32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern bool GetOpenFileName([In, Out] OPENFILENAME ofn);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public class OPENFILENAME {
+        public int lStructSize = Marshal.SizeOf(typeof(OPENFILENAME));
+        public IntPtr hwndOwner;
+        public IntPtr hInstance;
+        public string lpstrFilter;
+        public string lpstrCustomFilter;
+        public int nMaxCustFilter;
+        public int nFilterIndex;
+        public string lpstrFile;
+        public int nMaxFile = 260;
+        public string lpstrFileTitle;
+        public int nMaxFileTitle = 260;
+        public string lpstrInitialDir;
+        public string lpstrTitle;
+        public int Flags = 0x00080000 | 0x00001000 | 0x00000800 | 0x00000008; // OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR
+        public short nFileOffset;
+        public short nFileExtension;
+        public string lpstrDefExt = "exe";
+        public IntPtr lCustData;
+        public IntPtr lpfnHook;
+        public string lpTemplateName;
+        public IntPtr pvReserved;
+        public int dwReserved;
+        public int FlagsEx;
+    }
+
+    public static string Pick(string title) {
+        OPENFILENAME ofn = new OPENFILENAME();
+        ofn.hwndOwner = GetForegroundWindow();
+        ofn.lpstrFilter = "Applications (*.exe)\0*.exe\0All Files (*.*)\0*.*\0";
+        ofn.lpstrFile = new string(new char[260]);
+        ofn.lpstrFileTitle = new string(new char[260]);
+        ofn.lpstrTitle = title;
+        ofn.lpstrInitialDir = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        if (GetOpenFileName(ofn)) {
+            return ofn.lpstrFile;
+        }
+        return null;
+    }
 }
-$dialog.Filter = "Исполняемые файлы (*.exe)|*.exe|Все файлы (*.*)|*.*"
-$dialog.InitialDirectory = [Environment]::GetFolderPath("ProgramFiles")
-$dialog.CheckFileExists = $true
+'@
 
-# Ensure file picker window appears in front
-$form = New-Object System.Windows.Forms.Form
-$form.TopMost = $true
-$form.WindowState = [System.Windows.Forms.FormWindowState]::Minimized
-$form.Show()
-$form.Visible = $false
+if (-not ([System.Management.Automation.PSTypeName]'NativePicker').Type) {
+    Add-Type -TypeDefinition $csharp
+}
 
-$result = $dialog.ShowDialog($form)
-$form.Dispose()
+$title = if ($Target -eq "Calendar") {
+    "Выберите приложение календаря (.exe) / Select Calendar App"
+} else {
+    "Выберите приложение погоды (.exe) / Select Weather App"
+}
 
-if ($result -eq [System.Windows.Forms.DialogResult]::OK -and $dialog.FileName) {
-    $selectedPath = $dialog.FileName
+$selectedPath = [NativePicker]::Pick($title)
+
+if ($selectedPath) {
     $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
     $content = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
 
@@ -93,10 +136,11 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK -and $dialog.FileName) {
 
     [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
 
-    # Refresh skins
-    $rainmeterExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
-    if (Test-Path $rainmeterExe) {
-        & $rainmeterExe !Refresh "Darksidebar-11\Sidebar"
-        & $rainmeterExe !Refresh "Darksidebar-11\Settings"
+    # Refresh skins to reflect changes
+    $rmExe = @"C:\Program Files\Rainmeter\Rainmeter.exe"
+    if (-not (Test-Path $rmExe)) { $rmExe = @"C:\Program Files (x86)\Rainmeter\Rainmeter.exe" }
+    if (Test-Path $rmExe) {
+        Start-Process $rmExe "!Refresh Darksidebar-11\Sidebar"
+        Start-Process $rmExe "!Refresh Darksidebar-11\Settings"
     }
 }

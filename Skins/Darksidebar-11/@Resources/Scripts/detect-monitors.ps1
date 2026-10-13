@@ -1,4 +1,4 @@
-﻿# detect-monitors.ps1
+# detect-monitors.ps1
 # Обнаружение активных мониторов, их PnP ID, дружественных имен и циклическое переключение (prev / next)
 param(
     [string]$Direction = "",
@@ -174,14 +174,7 @@ if ($Direction -and $monitors.Count -gt 0) {
     }
 
     Write-Host "Cycled to monitor: $($chosen.FriendlyName) ($($chosen.DeviceName))"
-
-    # Вызываем интеллектуальное перемещение скина
-    $alignScript = Join-Path $scriptsDir "align-sidebar.ps1"
-    if (Test-Path $alignScript) {
-        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $alignScript
-    }
-
-    } elseif ($AsJson) {
+} elseif ($AsJson) {
     $monitors | ConvertTo-Json -Depth 3
 } else {
     $monitors

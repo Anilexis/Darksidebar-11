@@ -132,11 +132,9 @@ public class AlignHelper {
                     }
                 }
 
-                // 3. Fallback по имени адаптера или разрешению
+                // 3. Fallback по имени адаптера (DISPLAY1, DISPLAY2, DISPLAY3)
                 if (!match) {
                     if (!string.IsNullOrEmpty(fallbackDev) && dev.Equals(fallbackDev, StringComparison.OrdinalIgnoreCase)) {
-                        match = true;
-                    } else if (w == 1280 && h == 1024) {
                         match = true;
                     }
                 }
@@ -160,7 +158,7 @@ public class AlignHelper {
 
         if (found) {
             string bang = string.Format(
-                "[!SetVariable SkinHeight {0} \"Darksidebar-11\\Sidebar\"][!UpdateMeter MeterBackground \"Darksidebar-11\\Sidebar\"][!Move {1} {2} \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
+                "[!SetVariable SkinHeight {0} \"Darksidebar-11\\Sidebar\"][!UpdateMeter MeterBackground \"Darksidebar-11\\Sidebar\"][!Move {1} {2} \"Darksidebar-11\\Sidebar\"][!ZPos 0 \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
                 workHeight, targetX, targetY
             );
             SendBang(bang);
