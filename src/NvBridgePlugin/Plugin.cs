@@ -65,8 +65,86 @@ namespace NvBridgePlugin {
         [DllImport("nvml.dll", EntryPoint = "nvmlDeviceGetUtilizationRates")]
         static extern int NvmlGetUtilization(IntPtr handle, out NvmlUtilization util);
 
+        // --- FrameView SDK ---
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate IntPtr FvQueryInterfaceDelegate(uint index);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvInitDelegate();
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvCreateSessionDelegate(out IntPtr session);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvStartSessionDelegate(IntPtr session);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvEnableMetricsDelegate(IntPtr session, uint[] metrics, uint count);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvSampleDataDelegate(IntPtr session, int flags);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvReadDataDelegate(IntPtr session, ref Samples samples, uint count);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvStopSessionDelegate(IntPtr session);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate int FvDestroySessionDelegate(IntPtr session);
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct Samples {
+            public uint version;
+            public uint type;
+            public IntPtr mNumSamples;
+            public IntPtr mData;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct BaseMetric_v1 {
+            public uint baseversion;
+            public uint pad1;
+            public ulong mTimestamp;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct CPUPkgTemp_v1 {
+            public BaseMetric_v1 baseMetric;
+            public uint version;
+            public uint pad2;
+            public double mCPUPkgTemp;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct FPS_v1 {
+            public uint version;
+            public uint pad1;
+            public ulong PID;
+            public ulong SwapChain;
+            public double AvgFPS;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct AvgFPS_v1 {
+            public BaseMetric_v1 baseMetric;
+            public uint version;
+            public uint pad2;
+            public FPS_v1 mFPS;
+        }
+
+        const uint eAvgFPS = 0x6C4B1348;
+        const uint eCPUPkgTemp = 0xB0CCC37A;
+
         static bool nvmlInitialized = false;
         static IntPtr nvmlDevice = IntPtr.Zero;
+
+        static bool fvInitialized = false;
+        static IntPtr fvSession = IntPtr.Zero;
+        static FvSampleDataDelegate? fvSampleData;
+        static FvReadDataDelegate? fvReadData;
+        static FvStopSessionDelegate? fvStopSession;
+        static FvDestroySessionDelegate? fvDestroySession;
 
         static Thread? workerThread;
         static volatile bool isRunning = false;
@@ -147,45 +225,96 @@ namespace NvBridgePlugin {
             }
         }
 
-        static void EnsureWorkerRunning() {
+        static CPUPkgTemp_v1[] tempBuffer = new CPUPkgTemp_v1[1];
+        static GCHandle tempHandle;
+        static IntPtr pTempBuf = IntPtr.Zero;
+
+        static AvgFPS_v1[] fpsBuffer = new AvgFPS_v1[16];
+        static GCHandle fpsHandle;
+        static IntPtr pFpsBuf = IntPtr.Zero;
+
+        static void InitFrameView() {
             try {
-                if (Process.GetProcessesByName("NvBridgeWorker").Length > 0) return;
-                string docTools = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Rainmeter\Skins\Darksidebar-11\@Resources\Tools\NvBridgeWorker.exe");
-                if (File.Exists(docTools)) {
-                    Process.Start(new ProcessStartInfo {
-                        FileName = docTools,
-                        UseShellExecute = true,
-                        CreateNoWindow = true,
-                        WindowStyle = ProcessWindowStyle.Hidden
-                    });
+                string dllPath = @"C:\Program Files\NVIDIA Corporation\FrameViewSDK\bin\FvSDK_x64.dll";
+                if (!File.Exists(dllPath)) return;
+
+                IntPtr hModule = LoadLibrary(dllPath);
+                if (hModule == IntPtr.Zero) return;
+
+                IntPtr pQi = GetProcAddress(hModule, "fv_QueryInterface");
+                if (pQi == IntPtr.Zero) return;
+
+                var fvQi = Marshal.GetDelegateForFunctionPointer<FvQueryInterfaceDelegate>(pQi);
+                var fvInit = Marshal.GetDelegateForFunctionPointer<FvInitDelegate>(fvQi(7));
+                var fvCreateSession = Marshal.GetDelegateForFunctionPointer<FvCreateSessionDelegate>(fvQi(0));
+                fvDestroySession = Marshal.GetDelegateForFunctionPointer<FvDestroySessionDelegate>(fvQi(1));
+                var fvEnableMetrics = Marshal.GetDelegateForFunctionPointer<FvEnableMetricsDelegate>(fvQi(2));
+                fvSampleData = Marshal.GetDelegateForFunctionPointer<FvSampleDataDelegate>(fvQi(3));
+                fvReadData = Marshal.GetDelegateForFunctionPointer<FvReadDataDelegate>(fvQi(4));
+                var fvStartSession = Marshal.GetDelegateForFunctionPointer<FvStartSessionDelegate>(fvQi(5));
+                fvStopSession = Marshal.GetDelegateForFunctionPointer<FvStopSessionDelegate>(fvQi(6));
+
+                fvInit();
+                int rCreate = fvCreateSession(out fvSession);
+                if (rCreate == 0 && fvSession != IntPtr.Zero) {
+                    fvEnableMetrics(fvSession, new uint[] { eAvgFPS, eCPUPkgTemp }, 2);
+                    fvStartSession(fvSession);
+
+                    tempBuffer[0].baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
+                    tempBuffer[0].version = (uint)(Marshal.SizeOf<CPUPkgTemp_v1>() | (1 << 16));
+                    tempHandle = GCHandle.Alloc(tempBuffer, GCHandleType.Pinned);
+                    pTempBuf = tempHandle.AddrOfPinnedObject();
+
+                    for (int i = 0; i < fpsBuffer.Length; i++) {
+                        fpsBuffer[i].baseMetric.baseversion = (uint)(Marshal.SizeOf<BaseMetric_v1>() | (1 << 16));
+                        fpsBuffer[i].version = (uint)(Marshal.SizeOf<AvgFPS_v1>() | (1 << 16));
+                        fpsBuffer[i].mFPS.version = (uint)(Marshal.SizeOf<FPS_v1>() | (1 << 16));
+                    }
+                    fpsHandle = GCHandle.Alloc(fpsBuffer, GCHandleType.Pinned);
+                    pFpsBuf = fpsHandle.AddrOfPinnedObject();
+
+                    fvInitialized = true;
                 }
-            } catch { }
+            } catch {
+                fvInitialized = false;
+            }
         }
 
-        static void ReadHardwareCache() {
+        static string GetProcessBaseName(int pid) {
             try {
-                string cacheFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"Rainmeter\Skins\Darksidebar-11\@Resources\Cache\hardware-data.inc");
-                if (File.Exists(cacheFile)) {
-                    using (var fs = new FileStream(cacheFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (var sr = new StreamReader(fs, Encoding.ASCII)) {
-                        string text = sr.ReadToEnd();
-                        var m = System.Text.RegularExpressions.Regex.Match(text, @"HardwareCpuTemp=(\d+)");
-                        if (m.Success && double.TryParse(m.Groups[1].Value, out double t) && t > 0) {
-                            CpuTemp = t;
-                        }
-                        var mFps = System.Text.RegularExpressions.Regex.Match(text, @"HardwareFps=(\d+)");
-                        if (mFps.Success && double.TryParse(mFps.Groups[1].Value, out double f)) {
-                            Fps = f;
-                        }
-                    }
-                }
-            } catch { }
+                using Process p = Process.GetProcessById(pid);
+                return p.ProcessName.ToLowerInvariant();
+            } catch {
+                return "";
+            }
+        }
+
+        static bool IsNonGameProcess(string name) {
+            if (string.IsNullOrEmpty(name)) return true;
+            if (name == "dwm" || name == "explorer" || name == "rainmeter" || name == "applicationframehost" ||
+                name == "taskmgr" || name == "cmd" || name == "powershell" || name == "pwsh" ||
+                name == "conhost" || name == "windowsterminal" || name == "system" || name == "idle" ||
+                name == "chrome" || name == "msedge" || name == "firefox" || name == "opera" ||
+                name == "brave" || name == "vivaldi" || name == "tor" ||
+                name == "code" || name == "antigravity" || name == "devenv" || name == "rider64" ||
+                name == "idea64" || name == "clion64" || name == "pycharm64" ||
+                name == "notepad" || name == "notepad++" || name == "discord" || name == "telegram" ||
+                name == "spotify" || name == "steam" || name == "steamwebhelper" ||
+                name == "epicgameslauncher" || name == "galaxyclient" || name == "battlenet" ||
+                name == "origin" || name == "ea" || name == "nvcontainer" || name == "nvidia share" ||
+                name == "geforce_now" || name == "librehardwaremonitor" || name == "nvbridge" || name == "lhmbridge") {
+                return true;
+            }
+            if (name.StartsWith("chrome") || name.StartsWith("msedge") || name.StartsWith("antigravity")) {
+                return true;
+            }
+            return false;
         }
 
         static void WorkerLoop() {
             try {
                 InitNvml();
-                EnsureWorkerRunning();
+                InitFrameView();
             } catch { }
 
             while (isRunning) {
@@ -195,7 +324,7 @@ namespace NvBridgePlugin {
                 }
 
                 try {
-                    // 1. NVML GPU Telemetry
+                    // 1. NVML
                     if (!nvmlInitialized) InitNvml();
                     if (nvmlInitialized && nvmlDevice != IntPtr.Zero) {
                         uint gTemp;
@@ -215,15 +344,102 @@ namespace NvBridgePlugin {
                         }
                     }
 
-                    // 2. CPU Temperature & Game FPS from background NvBridgeWorker
-                    EnsureWorkerRunning();
-                    ReadHardwareCache();
+                    // 2. FrameView SDK
+                    if (!fvInitialized) InitFrameView();
+                    if (fvInitialized && fvSession != IntPtr.Zero && fvSampleData != null && fvReadData != null && pTempBuf != IntPtr.Zero) {
+                        try {
+                            fvSampleData(fvSession, 0);
+
+                            // CPU Package Temp
+                            Samples sTemp = new Samples {
+                                version = (uint)(Marshal.SizeOf<Samples>() | (1 << 16)),
+                                type = eCPUPkgTemp,
+                                mNumSamples = (IntPtr)1,
+                                mData = pTempBuf
+                            };
+
+                            if (fvReadData(fvSession, ref sTemp, 1) == 0) {
+                                if (tempBuffer[0].mCPUPkgTemp > 0) {
+                                    CpuTemp = Math.Round(tempBuffer[0].mCPUPkgTemp);
+                                }
+                            }
+                        } catch { }
+
+                        // FPS активной игры
+                        try {
+                            uint fgPid = 0;
+                            IntPtr fgWnd = GetForegroundWindow();
+                            if (fgWnd != IntPtr.Zero) {
+                                GetWindowThreadProcessId(fgWnd, out fgPid);
+                            }
+
+                            double detectedFps = 0;
+                            if (fgPid > 0 && pFpsBuf != IntPtr.Zero) {
+                                string fgName = GetProcessBaseName((int)fgPid);
+                                if (!IsNonGameProcess(fgName)) {
+                                    Samples sFps = new Samples {
+                                        version = (uint)(Marshal.SizeOf<Samples>() | (1 << 16)),
+                                        type = eAvgFPS,
+                                        mNumSamples = (IntPtr)fpsBuffer.Length,
+                                        mData = pFpsBuf
+                                    };
+
+                                    if (fvReadData(fvSession, ref sFps, 1) == 0) {
+                                        long count = sFps.mNumSamples.ToInt64();
+                                        if (count > fpsBuffer.Length) count = fpsBuffer.Length;
+                                        for (int i = 0; i < count; i++) {
+                                            if ((int)fpsBuffer[i].mFPS.PID == (int)fgPid && fpsBuffer[i].mFPS.AvgFPS > 0) {
+                                                detectedFps = Math.Round(fpsBuffer[i].mFPS.AvgFPS);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Fps = detectedFps;
+                        } catch { }
+                    }
+
+                    // 3. Fallback to LibreHardwareMonitor web server if CPU temp not available
+                    if (CpuTemp <= 0) {
+                        try {
+                            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMilliseconds(350) };
+                            string json = client.GetStringAsync("http://127.0.0.1:8085/data.json").GetAwaiter().GetResult();
+                            int idx = json.IndexOf("\"CPU Package\"");
+                            if (idx < 0) idx = json.IndexOf("\"Core Average\"");
+                            if (idx < 0) idx = json.IndexOf("\"CPU Total\"");
+                            if (idx >= 0) {
+                                int valIdx = json.IndexOf("\"Value\":", idx);
+                                if (valIdx >= 0 && valIdx - idx < 200) {
+                                    int start = json.IndexOf('"', valIdx + 8) + 1;
+                                    int end = json.IndexOf('°', start);
+                                    if (start > 0 && end > start) {
+                                        string str = json.Substring(start, end - start).Trim().Replace(',', '.');
+                                        if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double t) && t > 0) {
+                                            CpuTemp = Math.Round(t);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch { }
+                    }
                 } catch { }
 
                 Thread.Sleep(2000);
             }
 
             // Cleanup on shutdown
+            if (fvInitialized && fvSession != IntPtr.Zero) {
+                try {
+                    fvStopSession?.Invoke(fvSession);
+                } catch { }
+            }
+            if (tempHandle.IsAllocated) {
+                try { tempHandle.Free(); } catch { }
+            }
+            if (fpsHandle.IsAllocated) {
+                try { fpsHandle.Free(); } catch { }
+            }
             if (nvmlInitialized) {
                 try { NvmlShutdown(); } catch { }
             }
