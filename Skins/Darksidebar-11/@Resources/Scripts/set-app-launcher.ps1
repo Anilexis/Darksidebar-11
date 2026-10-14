@@ -82,6 +82,11 @@ if ($Target -eq "Calendar") {
 
 [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
 
+# Mirror to persistent external storage
+$persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
+Copy-Item $settingsPath (Join-Path $persistentDir "Settings.inc") -Force
+
 # Refresh skins
 $rainmeterExe = "C:\Program Files\Rainmeter\Rainmeter.exe"
 if (Test-Path $rainmeterExe) {
