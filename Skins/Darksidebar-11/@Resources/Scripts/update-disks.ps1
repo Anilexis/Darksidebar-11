@@ -172,4 +172,10 @@ HardwareVramY=$hwVramY
 
 # Write disks-generated.inc in CP1251 so Rainmeter parses Russian disk labels with 0 mojibake
 [System.IO.File]::WriteAllText($targetInc, $sb.ToString(), [System.Text.Encoding]::GetEncoding(1251))
+
+$persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
+Copy-Item $targetInc (Join-Path $persistentDir "disks-generated.inc") -Force
+Copy-Item $targetVars (Join-Path $persistentDir "disks-vars.inc") -Force
+
 Write-Host "Generated disks inc with $idx drives in CP1251: $targetInc and $targetVars"

@@ -171,6 +171,10 @@ if ($Direction -and $monitors.Count -gt 0) {
         $content = $content -replace '(?m)^MonitorFriendlyName=.*$', "MonitorFriendlyName=$($chosen.FriendlyName)"
         $content = $content -replace '(?m)^MonitorTargetId=.*$', "MonitorTargetId=$($chosen.PnpId)"
         [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
+
+        $persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+        if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
+        Copy-Item $settingsPath (Join-Path $persistentDir "Settings.inc") -Force
     }
 
     Write-Host "Cycled to monitor: $($chosen.FriendlyName) ($($chosen.DeviceName))"

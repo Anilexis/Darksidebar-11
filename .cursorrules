@@ -7,5 +7,6 @@
 # 5. Strict Depersonalization: Repository and release .rmskin packages MUST NOT contain developer personal data (personal disks C/D/E/G/T/W, SyncMaster/DISPLAY2 monitor, Tyumen city). Repo files must contain clean templates (Primary monitor, 1 disk C:, London default, FirstRunDone=0).
 # 6. Personal developer settings live ONLY in local Documents\Rainmeter\Skins\Darksidebar-11\ and must never be committed to GitHub.
 # 7. Encoding rule: All .ini and .inc skin files MUST be encoded in Windows-1251 (CP1251). Never use UTF-8.
-# 8. User Settings & Disk Preservation: On update (via Scoop or .rmskin), existing user Settings.inc and disks-generated.inc MUST NOT be overwritten. .rmskin packages Settings.default.inc and disks-generated.default.inc with Merge=1. first-run.ps1 exits immediately if FirstRunDone=1.
+# 8. User Settings & Disk Preservation: Updates (via Scoop or .rmskin) must NEVER overwrite user Settings.inc or disks. All settings mirror to persistent external storage %APPDATA%\Rainmeter\Darksidebar11-Config. Scoop uninstaller must NEVER delete user skin folder. first-run.ps1 restores from persistent backup if available.
+
 

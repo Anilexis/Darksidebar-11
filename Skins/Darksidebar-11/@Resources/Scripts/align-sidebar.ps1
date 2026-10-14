@@ -190,6 +190,13 @@ if (-not ([System.Management.Automation.PSTypeName]'AlignHelper').Type) {
 # Считываем конфигурацию из Settings.inc внутри @Resources
 $resourcesDir = Split-Path $PSScriptRoot
 $settingsPath = Join-Path $resourcesDir "Settings.inc"
+$persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+$persistentSettings = Join-Path $persistentDir "Settings.inc"
+
+# Fallback to persistent backup if local Settings.inc is missing
+if (-not (Test-Path $settingsPath) -and (Test-Path $persistentSettings)) {
+    Copy-Item $persistentSettings $settingsPath -Force
+}
 
 $panelWidth = 240
 $rightMargin = 0
@@ -202,7 +209,8 @@ $hideWhenMissing = $true
 
 if (Test-Path $settingsPath) {
     try {
-        $lines = Get-Content $settingsPath -Encoding UTF8 -ErrorAction SilentlyContinue
+        $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+        $lines = [System.IO.File]::ReadAllLines($settingsPath, $cp1251)
         foreach ($line in $lines) {
             if ($line -match '^\s*([^=;]+?)\s*=\s*(.*?)\s*$') {
                 $k = $Matches[1].Trim()

@@ -45,10 +45,16 @@ $newFriendly = $selected.FriendlyName
 $newDev = $selected.DeviceName
 
 # Обновляем Settings.inc
-$content = Get-Content $settingsPath -Raw -Encoding UTF8
+$cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+$content = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
 $content = $content -replace '(?m)^MonitorTargetId=.*$', "MonitorTargetId=$newPnpId"
 $content = $content -replace '(?m)^MonitorFriendlyName=.*$', "MonitorFriendlyName=$newFriendly"
 $content = $content -replace '(?m)^MonitorFallbackDev=.*$', "MonitorFallbackDev=$newDev"
 
-[System.IO.File]::WriteAllText($settingsPath, $content, [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
+
+$persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
+Copy-Item $settingsPath (Join-Path $persistentDir "Settings.inc") -Force
+
 Write-Host "Switched to monitor: $newFriendly ($newDev)"

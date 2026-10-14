@@ -119,6 +119,10 @@ if ($cityName -and $lat -ne 0.0) {
         }
 
         [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
+
+        $persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+        if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
+        Copy-Item $settingsPath (Join-Path $persistentDir "Settings.inc") -Force
     }
 
     $statusContent = @"
