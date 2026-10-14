@@ -222,49 +222,6 @@ if (Test-Path $settingsPath) {
     } catch { }
 }
 
-# First-run auto-detection of language (Requirement 6)
-if (Test-Path $settingsPath) {
-    try {
-        $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
-        $rawSettings = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
-        if ($rawSettings -notmatch '(?m)^FirstRunDone=1') {
-            $isRussian = $false
-            try {
-                if ((Get-Culture).TwoLetterISOLanguageName -eq "ru" -or [System.Globalization.CultureInfo]::InstalledUICulture.TwoLetterISOLanguageName -eq "ru") {
-                    $isRussian = $true
-                }
-            } catch { }
-
-            $rainmeterIni = "$env:APPDATA\Rainmeter\Rainmeter.ini"
-            if (Test-Path $rainmeterIni) {
-                try {
-                    $rmText = Get-Content $rainmeterIni -Raw -ErrorAction SilentlyContinue
-                    if ($rmText -match '(?i)Language=(1049|Russian)') {
-                        $isRussian = $true
-                    }
-                } catch { }
-            }
-
-            $detectedLang = if ($isRussian) { "Russian" } else { "English" }
-            $detectedFirstDay = if ($isRussian) { "Monday" } else { "Sunday" }
-            $detectedCity = if ($isRussian) { "Тюмень" } else { "London" }
-            $detectedLat = if ($isRussian) { "57.1522" } else { "51.5074" }
-            $detectedLon = if ($isRussian) { "65.5272" } else { "-0.1278" }
-
-            $rawSettings = $rawSettings -replace '(?m)^Language=.*$', "Language=$detectedLang"
-            $rawSettings = $rawSettings -replace '(?m)^CalendarFirstDay=.*$', "CalendarFirstDay=$detectedFirstDay"
-            $rawSettings = $rawSettings -replace '(?m)^WeatherCity=.*$', "WeatherCity=$detectedCity"
-            $rawSettings = $rawSettings -replace '(?m)^WeatherLat=.*$', "WeatherLat=$detectedLat"
-            $rawSettings = $rawSettings -replace '(?m)^WeatherLon=.*$', "WeatherLon=$detectedLon"
-            if ($rawSettings -match '(?m)^FirstRunDone=.*$') {
-                $rawSettings = $rawSettings -replace '(?m)^FirstRunDone=.*$', "FirstRunDone=1"
-            } else {
-                $rawSettings += "`nFirstRunDone=1`n"
-            }
-            [System.IO.File]::WriteAllText($settingsPath, $rawSettings, $cp1251)
-        }
-    } catch { }
-}
 
 [AlignHelper]::AlignSmart(
     $targetPnpId,

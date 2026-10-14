@@ -4,6 +4,6 @@
 # 2. Build the rmskin package using ./build-package.ps1 -Version <NEW_VERSION>.
 # 3. Update the Scoop manifest in bucket/darksidebar-11.json (version, url, sha256 hash from GitHub release).
 # 4. Commit, tag (v<VERSION>), push to GitHub, and verify GitHub Actions release.
-# 5. Encoding rule: All .ini and .inc skin files (Settings.inc, Russian.inc, Sidebar.ini) MUST be saved in Windows-1251 (CP1251). NEVER use UTF-8 as it causes mojibake (РўСЋРјРµРЅСЊ) in Rainmeter.
-# 6. Never overwrite user default city (Tyumen) without consent.
-# 7. Sync skin modifications to Documents\Rainmeter\Skins\Darksidebar-11\ and send !RefreshApp.
+# 5. Strict Depersonalization: Repository and release .rmskin packages MUST NOT contain developer personal data (personal disks C/D/E/G/T/W, SyncMaster/DISPLAY2 monitor, Tyumen city). Repo files must contain clean templates (Primary monitor, 1 disk C:, London default, FirstRunDone=0).
+# 6. Personal developer settings live ONLY in local Documents\Rainmeter\Skins\Darksidebar-11\ and must never be committed to GitHub.
+# 7. Encoding rule: All .ini and .inc skin files MUST be encoded in Windows-1251 (CP1251). Never use UTF-8.

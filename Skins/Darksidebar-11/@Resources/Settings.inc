@@ -1,4 +1,4 @@
-; Darksidebar-11 Settings Configuration
+; Darksidebar-11 Settings Configuration (Template for Distribution)
 [Variables]
 ; Global dimensions
 SkinWidth=240
@@ -39,21 +39,21 @@ FontSizeHuge=28
 ; ============================================================
 ; USER CONFIGURATION (Configurable via Settings.ini GUI)
 ; ============================================================
-; Display & Placement Settings
-MonitorTargetId=MONITOR\SAM0247\{4d36e96e-e325-11ce-bfc1-08002be10318}\0001
-MonitorFriendlyName=SyncMaster
-MonitorFallbackDev=\\.\DISPLAY2
+; Display & Placement Settings (Default: Primary Display, Right Edge)
+MonitorTargetId=
+MonitorFriendlyName=Primary
+MonitorFallbackDev=\\.\DISPLAY1
 PlacementEdge=Right
 RightMargin=0
 TopMargin=0
 HideWhenTargetMissing=0
 
-; Weather Settings (Default: Tyumen)
-WeatherCity=Тюмень
-WeatherLat=57.1522
-WeatherLon=65.5272
-WeatherCountryCode=RU
-WeatherCountryName=Россия
+; Weather Settings (Default: London / Greenwich; auto-detected on first run)
+WeatherCity=London
+WeatherLat=51.5074
+WeatherLon=-0.1278
+WeatherCountryCode=GB
+WeatherCountryName=United Kingdom
 WeatherUnits=metric
 
 ; Localization Settings
@@ -86,5 +86,5 @@ WeatherToolTip=#LangOpenWeather#
 ; Holidays Configuration
 HolidaysEnabled=1
 
-; First run flag (1 = prevents recurring IP auto-detection from overwriting location)
-FirstRunDone=1
+; First run flag (0 = triggers automatic setup of location, monitors & disks on initial launch)
+FirstRunDone=0

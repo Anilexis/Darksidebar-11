@@ -48,12 +48,33 @@ Copy-Item -Path "$skinsSource\*" -Destination $stagingSkins -Recurse -Force
 # Копируем плагин в Plugins\64bit\ для стандартного Rainmeter Skin Installer
 Copy-Item -Path "$skinsSource\@Resources\Plugins\NvBridge.dll" -Destination "$stagingPlugins64\NvBridge.dll" -Force
 
-# Для релизного пакета гарантируем Windows-1251 (ANSI) для корректной работы с Rainmeter
+# 2.1 Деперсонализация настроек и кэшей перед сборкой релизного пакета
+Write-Host "      Деперсонализация настроек и кэшей дистрибутива..." -ForegroundColor Yellow
 $stagingSettings = Join-Path $stagingSkins "@Resources\Settings.inc"
 if (Test-Path $stagingSettings) {
     $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
     $text = [System.IO.File]::ReadAllText($stagingSettings, $cp1251)
+    $text = $text -replace '(?m)^WeatherCity=.*$', 'WeatherCity=London'
+    $text = $text -replace '(?m)^WeatherLat=.*$', 'WeatherLat=51.5074'
+    $text = $text -replace '(?m)^WeatherLon=.*$', 'WeatherLon=-0.1278'
+    $text = $text -replace '(?m)^WeatherCountryCode=.*$', 'WeatherCountryCode=GB'
+    $text = $text -replace '(?m)^WeatherCountryName=.*$', 'WeatherCountryName=United Kingdom'
+    $text = $text -replace '(?m)^MonitorTargetId=.*$', 'MonitorTargetId='
+    $text = $text -replace '(?m)^MonitorFriendlyName=.*$', 'MonitorFriendlyName=Primary'
+    $text = $text -replace '(?m)^MonitorFallbackDev=.*$', 'MonitorFallbackDev=\\.\DISPLAY1'
+    $text = $text -replace '(?m)^FirstRunDone=.*$', 'FirstRunDone=0'
     [System.IO.File]::WriteAllText($stagingSettings, $text, $cp1251)
+}
+
+# Очищаем кэши в staging, чтобы чужие диски и данные не попадали в дистрибутив
+$stagingCache = Join-Path $stagingSkins "@Resources\Cache"
+if (Test-Path $stagingCache) {
+    $cleanDisksVars = "[Variables]`r`nDisksCount=1`r`nDivider4Y=668`r`nHardwareTitleY=688`r`nHardwareCpuY=713`r`nHardwareCpuBarY=727`r`nHardwareRamY=736`r`nHardwareRamBarY=750`r`nHardwareGpuY=759`r`nHardwareGpuBarY=773`r`nHardwareVramY=781`r`n"
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-vars.inc"), $cleanDisksVars, [System.Text.Encoding]::GetEncoding(1251))
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "hardware-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-search-status.inc"), "[Variables]`r`nWeatherSearchStatus=`r`nWeatherSearchFound=0`r`n", [System.Text.Encoding]::GetEncoding(1251))
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "holidays.lua"), "-- holidays cache`r`nreturn {}`r`n", [System.Text.Encoding]::UTF8)
 }
 
 # 3. Формируем метаданные Rainmeter.tag
