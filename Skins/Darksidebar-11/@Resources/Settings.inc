@@ -1,4 +1,4 @@
-[Variables]
+﻿[Variables]
 ; Global dimensions
 SkinWidth=240
 ContentWidth=216
@@ -48,11 +48,11 @@ TopMargin=0
 HideWhenTargetMissing=0
 
 ; Weather Settings (Default: London / Greenwich; auto-detected on first run)
-WeatherCity=Warsaw
-WeatherLat=52.2298
-WeatherLon=21.0118
-WeatherCountryCode=PL
-WeatherCountryName=Poland
+WeatherCity=Тюмень
+WeatherLat=57.1522
+WeatherLon=65.5272
+WeatherCountryCode=RU
+WeatherCountryName=Россия
 WeatherUnits=metric
 
 ; Localization Settings

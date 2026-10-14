@@ -225,8 +225,8 @@ if (Test-Path $settingsPath) {
 # First-run auto-detection of language (Requirement 6)
 if (Test-Path $settingsPath) {
     try {
-        $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
-        $rawSettings = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
+        $utf8BOM = [System.Text.UTF8Encoding]::new($true)
+        $rawSettings = [System.IO.File]::ReadAllText($settingsPath, [System.Text.Encoding]::UTF8)
         if ($rawSettings -notmatch '(?m)^FirstRunDone=1') {
             $isRussian = $false
             try {
@@ -261,7 +261,7 @@ if (Test-Path $settingsPath) {
             } else {
                 $rawSettings += "`nFirstRunDone=1`n"
             }
-            [System.IO.File]::WriteAllText($settingsPath, $rawSettings, $cp1251)
+            [System.IO.File]::WriteAllText($settingsPath, $rawSettings, $utf8BOM)
         }
     } catch { }
 }

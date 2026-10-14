@@ -1,4 +1,4 @@
-﻿# build-package.ps1
+# build-package.ps1
 # Автоматическая сборка релизного пакета Darksidebar-11.rmskin для GitHub Releases и Scoop
 param(
     [string]$Version = "1.0.0",
@@ -48,13 +48,12 @@ Copy-Item -Path "$skinsSource\*" -Destination $stagingSkins -Recurse -Force
 # Копируем плагин в Plugins\64bit\ для стандартного Rainmeter Skin Installer
 Copy-Item -Path "$skinsSource\@Resources\Plugins\NvBridge.dll" -Destination "$stagingPlugins64\NvBridge.dll" -Force
 
-# Для релизного пакета сбрасываем FirstRunDone=0
+# Для релизного пакета гарантируем UTF-8 с BOM
 $stagingSettings = Join-Path $stagingSkins "@Resources\Settings.inc"
 if (Test-Path $stagingSettings) {
-    $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
-    $text = [System.IO.File]::ReadAllText($stagingSettings, $cp1251)
-    $text = $text -replace '(?m)^FirstRunDone=.*$', 'FirstRunDone=0'
-    [System.IO.File]::WriteAllText($stagingSettings, $text, $cp1251)
+    $utf8BOM = [System.Text.UTF8Encoding]::new($true)
+    $text = [System.IO.File]::ReadAllText($stagingSettings, [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText($stagingSettings, $text, $utf8BOM)
 }
 
 # 3. Формируем метаданные Rainmeter.tag

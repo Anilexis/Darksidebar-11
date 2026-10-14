@@ -1,0 +1,9 @@
+# Darksidebar-11 Cursor Rules
+# Always strictly adhere to PROJECT_RULES.md:
+# 1. Bump version with Semantic Versioning (SemVer) upon any fix or feature.
+# 2. Build the rmskin package using ./build-package.ps1 -Version <NEW_VERSION>.
+# 3. Update the Scoop manifest in bucket/darksidebar-11.json (version, url, sha256 hash).
+# 4. Commit, tag (v<VERSION>), push to GitHub, and create GitHub release with rmskin asset.
+# 5. Always use UTF-8 with BOM for .ini and .inc files to prevent encoding corruption in Rainmeter.
+# 6. Never overwrite user default city (Tyumen) without consent.
+# 7. Sync skin modifications to Documents\Rainmeter\Skins\Darksidebar-11\ and send !RefreshApp.
