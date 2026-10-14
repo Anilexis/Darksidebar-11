@@ -4,7 +4,7 @@
     "homepage": "https://github.com/Anilexis/Darksidebar-11",
     "license": "MIT",
     "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v1.0.14/Darksidebar-11-v1.0.14.rmskin",
-    "hash": "575D9B1097908282094A392939045731E903EB179675DE9D492D354E9E559812",
+    "hash": "BF90FC4189E57D0CB21921B8C745F15781DB73B5601F9F2DAB8F6ACCF2A806BF",
     "installer": {
         "script": [
             "Add-Type -AssemblyName System.IO.Compression.FileSystem",
