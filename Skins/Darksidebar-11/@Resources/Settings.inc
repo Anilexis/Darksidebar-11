@@ -1,4 +1,5 @@
-﻿[Variables]
+; Darksidebar-11 Settings Configuration
+[Variables]
 ; Global dimensions
 SkinWidth=240
 ContentWidth=216
@@ -47,7 +48,7 @@ RightMargin=0
 TopMargin=0
 HideWhenTargetMissing=0
 
-; Weather Settings (Default: London / Greenwich; auto-detected on first run)
+; Weather Settings (Default: Tyumen)
 WeatherCity=Тюмень
 WeatherLat=57.1522
 WeatherLon=65.5272
@@ -85,5 +86,5 @@ WeatherToolTip=#LangOpenWeather#
 ; Holidays Configuration
 HolidaysEnabled=1
 
-; First run flag (0 = triggers IP auto-detection of location on first launch)
+; First run flag (1 = prevents recurring IP auto-detection from overwriting location)
 FirstRunDone=1

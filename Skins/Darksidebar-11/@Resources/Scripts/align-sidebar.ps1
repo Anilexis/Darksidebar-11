@@ -169,7 +169,7 @@ public class AlignHelper {
             int baseHeight = (targetScale < 0.99) ? (int)Math.Round(workHeight / targetScale) : workHeight;
             string bang = string.Format(
                 System.Globalization.CultureInfo.InvariantCulture,
-                "[!SetVariable UiScale {0} \"Darksidebar-11\\Sidebar\"][!SetVariable SkinHeight {1} \"Darksidebar-11\\Sidebar\"][!UpdateMeter * \"Darksidebar-11\\Sidebar\"][!Move {2} {3} \"Darksidebar-11\\Sidebar\"][!ZPos 0 \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
+                "[!SetVariable UiScale {0} \"Darksidebar-11\\Sidebar\"][!SetVariable SkinHeight {1} \"Darksidebar-11\\Sidebar\"][!UpdateMeter * \"Darksidebar-11\\Sidebar\"][!Move {2} {3} \"Darksidebar-11\\Sidebar\"][!KeepOnScreen 0 \"Darksidebar-11\\Sidebar\"][!SnapEdges 0 \"Darksidebar-11\\Sidebar\"][!ZPos 0 \"Darksidebar-11\\Sidebar\"][!Show \"Darksidebar-11\\Sidebar\"][!Draggable 0 \"Darksidebar-11\\Sidebar\"][!Redraw \"Darksidebar-11\\Sidebar\"]",
                 scaleStr, baseHeight, targetX, targetY
             );
             SendBang(bang);
