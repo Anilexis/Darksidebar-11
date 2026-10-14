@@ -48,12 +48,15 @@ Copy-Item -Path "$skinsSource\*" -Destination $stagingSkins -Recurse -Force
 # Копируем плагин в Plugins\64bit\ для стандартного Rainmeter Skin Installer
 Copy-Item -Path "$skinsSource\@Resources\Plugins\NvBridge.dll" -Destination "$stagingPlugins64\NvBridge.dll" -Force
 
-# 2.1 Деперсонализация настроек и кэшей перед сборкой релизного пакета
+# 2.1 Деперсонализация настроек и подготовка шаблонов по умолчанию
 Write-Host "      Деперсонализация настроек и кэшей дистрибутива..." -ForegroundColor Yellow
 $stagingSettings = Join-Path $stagingSkins "@Resources\Settings.inc"
-if (Test-Path $stagingSettings) {
+$stagingDefaultSettings = Join-Path $stagingSkins "@Resources\Settings.default.inc"
+
+$sourceSettingsForTemplate = if (Test-Path $stagingDefaultSettings) { $stagingDefaultSettings } else { $stagingSettings }
+if (Test-Path $sourceSettingsForTemplate) {
     $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
-    $text = [System.IO.File]::ReadAllText($stagingSettings, $cp1251)
+    $text = [System.IO.File]::ReadAllText($sourceSettingsForTemplate, $cp1251)
     $text = $text -replace '(?m)^WeatherCity=.*$', 'WeatherCity=London'
     $text = $text -replace '(?m)^WeatherLat=.*$', 'WeatherLat=51.5074'
     $text = $text -replace '(?m)^WeatherLon=.*$', 'WeatherLon=-0.1278'
@@ -63,14 +66,29 @@ if (Test-Path $stagingSettings) {
     $text = $text -replace '(?m)^MonitorFriendlyName=.*$', 'MonitorFriendlyName=Primary'
     $text = $text -replace '(?m)^MonitorFallbackDev=.*$', 'MonitorFallbackDev=\\.\DISPLAY1'
     $text = $text -replace '(?m)^FirstRunDone=.*$', 'FirstRunDone=0'
-    [System.IO.File]::WriteAllText($stagingSettings, $text, $cp1251)
+    [System.IO.File]::WriteAllText($stagingDefaultSettings, $text, $cp1251)
 }
 
-# Очищаем кэши в staging, чтобы чужие диски и данные не попадали в дистрибутив
+# КРИТИЧЕСКИ ВАЖНО: Удаляем Settings.inc из дистрибутива!
+# При Merge=1 в Rainmeter.tag установщик Rainmeter обновит скин, но НЕ перезапишет Settings.inc пользователя!
+if (Test-Path $stagingSettings) {
+    Remove-Item -Path $stagingSettings -Force -ErrorAction SilentlyContinue
+}
+
+# 2.2 Подготовка шаблонов кэшей и защита пользовательских дисков
 $stagingCache = Join-Path $stagingSkins "@Resources\Cache"
 if (Test-Path $stagingCache) {
     $cleanDisksVars = "[Variables]`r`nDisksCount=1`r`nDivider4Y=668`r`nHardwareTitleY=688`r`nHardwareCpuY=713`r`nHardwareCpuBarY=727`r`nHardwareRamY=736`r`nHardwareRamBarY=750`r`nHardwareGpuY=759`r`nHardwareGpuBarY=773`r`nHardwareVramY=781`r`n"
-    [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-vars.inc"), $cleanDisksVars, [System.Text.Encoding]::GetEncoding(1251))
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-vars.default.inc"), $cleanDisksVars, [System.Text.Encoding]::GetEncoding(1251))
+
+    $cleanDisksGen = "; Fallback single drive C:`r`n[MeasureTotalC]`r`nMeasure=FreeDiskSpace`r`nDrive=C:`r`nTotal=1`r`nUpdateDivider=10`r`n`r`n[MeasureFreeC]`r`nMeasure=FreeDiskSpace`r`nDrive=C:`r`nUpdateDivider=10`r`n`r`n[MeterDiskLabelC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=String`r`nText=C:`r`nX=18`r`nY=626`r`nFontFace=#FontMono#`r`nFontSize=#FontSizeBody#`r`nFontColor=#ColorTextSecondary#`r`nAntiAlias=1`r`n`r`n[MeterDiskValueC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=String`r`nMeasureName=MeasureFreeC`r`nMeasureName2=MeasureTotalC`r`nX=222`r`nY=626`r`nStringAlign=Right`r`nFontFace=#FontMono#`r`nFontSize=#FontSizeBody#`r`nFontColor=#ColorTextPrimary#`r`nAntiAlias=1`r`nAutoScale=1`r`nNumOfDecimals=0`r`nText=%1B / %2B`r`n`r`n[MeterDiskBarC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=Bar`r`nMeasureName=MeasureFreeC`r`nX=18`r`nY=640`r`nW=204`r`nH=3`r`nBarColor=#ColorBarFill#`r`nSolidColor=#ColorBarBg#`r`nBarOrientation=Horizontal`r`nFlip=1`r`n"
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-generated.default.inc"), $cleanDisksGen, [System.Text.Encoding]::GetEncoding(1251))
+
+    # КРИТИЧЕСКИ ВАЖНО: Удаляем disks-generated.inc и disks-vars.inc из архива,
+    # чтобы установщик Rainmeter не затирал дисковую топологию пользователя при обновлении
+    Remove-Item -Path (Join-Path $stagingCache "disks-generated.inc") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $stagingCache "disks-vars.inc") -Force -ErrorAction SilentlyContinue
+
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "hardware-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-search-status.inc"), "[Variables]`r`nWeatherSearchStatus=`r`nWeatherSearchFound=0`r`n", [System.Text.Encoding]::GetEncoding(1251))
@@ -84,7 +102,7 @@ $tagContent = @"
 SkinName=$skinName
 Author=Anilexis
 Version=$Version
-Merge=0
+Merge=1
 LoadType=Skin
 Load=$skinName\Sidebar\Sidebar.ini
 LoadSkin=$skinName\Sidebar\Sidebar.ini

@@ -1,0 +1,11 @@
+[Variables]
+DisksCount=1
+Divider4Y=668
+HardwareTitleY=688
+HardwareCpuY=713
+HardwareCpuBarY=727
+HardwareRamY=736
+HardwareRamBarY=750
+HardwareGpuY=759
+HardwareGpuBarY=773
+HardwareVramY=781
