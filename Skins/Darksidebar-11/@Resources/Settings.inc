@@ -49,11 +49,11 @@ TopMargin=0
 HideWhenTargetMissing=0
 
 ; Weather Settings (Default: Tyumen)
-WeatherCity=РўСЋРјРµРЅСЊ
+WeatherCity=Тюмень
 WeatherLat=57.1522
 WeatherLon=65.5272
 WeatherCountryCode=RU
-WeatherCountryName=Р РѕСЃСЃРёСЏ
+WeatherCountryName=Россия
 WeatherUnits=metric
 
 ; Localization Settings

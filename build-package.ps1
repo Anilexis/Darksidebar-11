@@ -48,12 +48,12 @@ Copy-Item -Path "$skinsSource\*" -Destination $stagingSkins -Recurse -Force
 # Копируем плагин в Plugins\64bit\ для стандартного Rainmeter Skin Installer
 Copy-Item -Path "$skinsSource\@Resources\Plugins\NvBridge.dll" -Destination "$stagingPlugins64\NvBridge.dll" -Force
 
-# Для релизного пакета гарантируем UTF-8 с BOM
+# Для релизного пакета гарантируем Windows-1251 (ANSI) для корректной работы с Rainmeter
 $stagingSettings = Join-Path $stagingSkins "@Resources\Settings.inc"
 if (Test-Path $stagingSettings) {
-    $utf8BOM = [System.Text.UTF8Encoding]::new($true)
-    $text = [System.IO.File]::ReadAllText($stagingSettings, [System.Text.Encoding]::UTF8)
-    [System.IO.File]::WriteAllText($stagingSettings, $text, $utf8BOM)
+    $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+    $text = [System.IO.File]::ReadAllText($stagingSettings, $cp1251)
+    [System.IO.File]::WriteAllText($stagingSettings, $text, $cp1251)
 }
 
 # 3. Формируем метаданные Rainmeter.tag

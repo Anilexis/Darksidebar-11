@@ -37,8 +37,8 @@ if ($city -and $lat -ne 0.0) {
         $latStr = $lat.ToString("0.0000", [System.Globalization.CultureInfo]::InvariantCulture)
         $lonStr = $lon.ToString("0.0000", [System.Globalization.CultureInfo]::InvariantCulture)
 
-        $utf8BOM = [System.Text.UTF8Encoding]::new($true)
-        $content = [System.IO.File]::ReadAllText($settingsPath, [System.Text.Encoding]::UTF8)
+        $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+        $content = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
         $content = $content -replace '(?m)^WeatherCity=.*$', "WeatherCity=$city"
         $content = $content -replace '(?m)^WeatherLat=.*$', "WeatherLat=$latStr"
         $content = $content -replace '(?m)^WeatherLon=.*$', "WeatherLon=$lonStr"
@@ -54,7 +54,7 @@ if ($city -and $lat -ne 0.0) {
             $content += "`nWeatherCountryName=$countryName"
         }
 
-        [System.IO.File]::WriteAllText($settingsPath, $content, $utf8BOM)
+        [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
         Write-Host "Updated weather location: $city ($latStr, $lonStr), Country: $countryCode"
 
         # Обновляем праздники для определенной страны

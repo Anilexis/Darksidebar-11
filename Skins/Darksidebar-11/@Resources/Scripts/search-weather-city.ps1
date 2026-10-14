@@ -95,14 +95,14 @@ if ($Query -match '^\s*([+-]?\d+(?:\.\d+)?)[,\s]+([+-]?\d+(?:\.\d+)?)\s*$') {
     }
 }
 
-$utf8BOM = [System.Text.UTF8Encoding]::new($true)
+$cp1251 = [System.Text.Encoding]::GetEncoding(1251)
 
 if ($cityName -and $lat -ne 0.0) {
     $latStr = $lat.ToString("0.0000", [System.Globalization.CultureInfo]::InvariantCulture)
     $lonStr = $lon.ToString("0.0000", [System.Globalization.CultureInfo]::InvariantCulture)
 
     if (Test-Path $settingsPath) {
-        $content = [System.IO.File]::ReadAllText($settingsPath, [System.Text.Encoding]::UTF8)
+        $content = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
         $content = $content -replace '(?m)^WeatherCity=.*$', "WeatherCity=$cityName"
         $content = $content -replace '(?m)^WeatherLat=.*$', "WeatherLat=$latStr"
         $content = $content -replace '(?m)^WeatherLon=.*$', "WeatherLon=$lonStr"
@@ -118,7 +118,7 @@ if ($cityName -and $lat -ne 0.0) {
             $content += "`nWeatherCountryName=$countryName"
         }
 
-        [System.IO.File]::WriteAllText($settingsPath, $content, $utf8BOM)
+        [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
     }
 
     $statusContent = @"
@@ -126,7 +126,7 @@ if ($cityName -and $lat -ne 0.0) {
 WeatherSearchStatus=Найдено: $cityName ($latStr, $lonStr)
 WeatherSearchFound=1
 "@
-    [System.IO.File]::WriteAllText($statusFile, $statusContent, $utf8BOM)
+    [System.IO.File]::WriteAllText($statusFile, $statusContent, $cp1251)
     Write-Host "Success: $cityName ($latStr, $lonStr), Country: $countryCode"
 
     # Автоматически обновляем праздники по найденной стране
@@ -140,7 +140,7 @@ WeatherSearchFound=1
 WeatherSearchStatus=Не найдено: $Query
 WeatherSearchFound=0
 "@
-    [System.IO.File]::WriteAllText($statusFile, $statusContent, $utf8BOM)
+    [System.IO.File]::WriteAllText($statusFile, $statusContent, $cp1251)
     Write-Host "Not found: $Query"
 }
 

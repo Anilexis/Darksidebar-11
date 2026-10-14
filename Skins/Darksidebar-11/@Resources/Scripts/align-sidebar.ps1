@@ -225,8 +225,8 @@ if (Test-Path $settingsPath) {
 # First-run auto-detection of language (Requirement 6)
 if (Test-Path $settingsPath) {
     try {
-        $utf8BOM = [System.Text.UTF8Encoding]::new($true)
-        $rawSettings = [System.IO.File]::ReadAllText($settingsPath, [System.Text.Encoding]::UTF8)
+        $cp1251 = [System.Text.Encoding]::GetEncoding(1251)
+        $rawSettings = [System.IO.File]::ReadAllText($settingsPath, $cp1251)
         if ($rawSettings -notmatch '(?m)^FirstRunDone=1') {
             $isRussian = $false
             try {
@@ -247,9 +247,9 @@ if (Test-Path $settingsPath) {
 
             $detectedLang = if ($isRussian) { "Russian" } else { "English" }
             $detectedFirstDay = if ($isRussian) { "Monday" } else { "Sunday" }
-            $detectedCity = if ($isRussian) { "Москва" } else { "London" }
-            $detectedLat = if ($isRussian) { "55.7558" } else { "51.5074" }
-            $detectedLon = if ($isRussian) { "37.6176" } else { "-0.1278" }
+            $detectedCity = if ($isRussian) { "Тюмень" } else { "London" }
+            $detectedLat = if ($isRussian) { "57.1522" } else { "51.5074" }
+            $detectedLon = if ($isRussian) { "65.5272" } else { "-0.1278" }
 
             $rawSettings = $rawSettings -replace '(?m)^Language=.*$', "Language=$detectedLang"
             $rawSettings = $rawSettings -replace '(?m)^CalendarFirstDay=.*$', "CalendarFirstDay=$detectedFirstDay"
@@ -261,7 +261,7 @@ if (Test-Path $settingsPath) {
             } else {
                 $rawSettings += "`nFirstRunDone=1`n"
             }
-            [System.IO.File]::WriteAllText($settingsPath, $rawSettings, $utf8BOM)
+            [System.IO.File]::WriteAllText($settingsPath, $rawSettings, $cp1251)
         }
     } catch { }
 }

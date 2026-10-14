@@ -20,14 +20,10 @@
    - Пакет генерируется в `dist/Darksidebar-11-v<НОВАЯ_ВЕРСИЯ>.rmskin`.
 
 3. **Обновление Scoop-манифеста (`bucket/darksidebar-11.json`):**
-   - Вычислить SHA256 хеш полученного файла `.rmskin` (скрипт сборки выводит его в консоль):
-     ```powershell
-     (Get-FileHash -Path "dist/Darksidebar-11-v<НОВАЯ_ВЕРСИЯ>.rmskin" -Algorithm SHA256).Hash
-     ```
-   - Обновить поля в `bucket/darksidebar-11.json`:
+   - Обновить поля:
      - `"version"`: актуальная версия (без префикса `v`).
      - `"url"`: ссылка на релиз GitHub `https://github.com/Anilexis/Darksidebar-11/releases/download/v<ВЕРСИЯ>/Darksidebar-11-v<ВЕРСИЯ>.rmskin`.
-     - `"hash"`: точный SHA256 хеш собранного файла.
+     - `"hash"`: точный SHA256 хеш релизного файла с GitHub Releases.
 
 4. **Фиксация в Git и GitHub:**
    - Закоммитить все изменения по формату Conventional Commits (`fix: ...`, `feat: ...`, `refactor: ...`).
@@ -37,18 +33,16 @@
      git push origin main
      git push origin v<НОВАЯ_ВЕРСИЯ>
      ```
-   - Опубликовать GitHub Release с прикреплением файла пакета через `gh release`:
-     ```bash
-     gh release create v<НОВАЯ_ВЕРСИЯ> dist/Darksidebar-11-v<НОВАЯ_ВЕРСИЯ>.rmskin --title "Darksidebar-11 v<НОВАЯ_ВЕРСИЯ>" --notes "Описание изменений"
-     ```
+   - Дождаться сборки релиза на GitHub Actions и при необходимости синхронизировать окончательный SHA256 хеш в Scoop-манифесте.
 
 ---
 
-## 2. Кодировки файлов и работа с кириллицей
+## 2. Кодировки файлов и работа с кириллицей (КРИТИЧЕСКИ ВАЖНО)
 
-1. **Строго UTF-8 с BOM (Byte Order Mark) или UTF-16 LE:**
-   - Все файлы `.ini` и `.inc` скина, содержащие или могущие содержать русские символы (особенно `Settings.inc`, `Languages/Russian.inc`, кэш-файлы), должны сохраняться **СТРОГО в UTF-8 с BOM** (`[System.Text.UTF8Encoding]::new($true)` в PowerShell или `utf-8-sig` в Python).
-   - **ЗАПРЕЩЕНО** читать или сохранять конфигурационные файлы в `Windows-1251 (CP1251)` или `UTF-8 без BOM`. Это приводит к появлению кракозябр в Rainmeter.
+1. **Кодировка Windows-1251 (CP1251) для скина и настроек:**
+   - Rainmeter на русскоязычной Windows работает в режиме ANSI (`GetPrivateProfileStringA` / CP1251).
+   - Все конфигурационные файлы скина (`.ini`, `.inc`), содержащие кириллические символы (включая `Sidebar.ini`, `Settings.ini`, `Settings.inc`, `Languages/Russian.inc`, кэш-файлы), **ОБЯЗАНЫ сохраняться в кодировке Windows-1251 (CP1251)** (`[System.Text.Encoding]::GetEncoding(1251)`).
+   - **СТРОГО ЗАПРЕЩЕНО** сохранять `Settings.inc` в UTF-8. Это приводит к mojibake-кракозябрам вида `РўСЋРјРµРЅСЊ` вместо «Тюмень», а UTF-8 BOM ломает считывание секции `[Variables]`.
 
 2. **Сохранение пользовательских настроек:**
    - Город по умолчанию — **Тюмень** (`WeatherCity=Тюмень`, `WeatherCountryName=Россия`, `WeatherCountryCode=RU`, `WeatherLat=57.1522`, `WeatherLon=65.5272`).
