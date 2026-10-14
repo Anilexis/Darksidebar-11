@@ -81,8 +81,10 @@ if (Test-Path $stagingCache) {
     $cleanDisksVars = "[Variables]`r`nDisksCount=1`r`nDivider4Y=668`r`nHardwareTitleY=688`r`nHardwareCpuY=713`r`nHardwareCpuBarY=727`r`nHardwareRamY=736`r`nHardwareRamBarY=750`r`nHardwareGpuY=759`r`nHardwareGpuBarY=773`r`nHardwareVramY=781`r`n"
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-vars.default.inc"), $cleanDisksVars, [System.Text.Encoding]::GetEncoding(1251))
 
-    $cleanDisksGen = "; Fallback single drive C:`r`n[MeasureTotalC]`r`nMeasure=FreeDiskSpace`r`nDrive=C:`r`nTotal=1`r`nUpdateDivider=10`r`n`r`n[MeasureFreeC]`r`nMeasure=FreeDiskSpace`r`nDrive=C:`r`nUpdateDivider=10`r`n`r`n[MeterDiskLabelC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=String`r`nText=C:`r`nX=18`r`nY=626`r`nFontFace=#FontMono#`r`nFontSize=#FontSizeBody#`r`nFontColor=#ColorTextSecondary#`r`nAntiAlias=1`r`n`r`n[MeterDiskValueC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=String`r`nMeasureName=MeasureFreeC`r`nMeasureName2=MeasureTotalC`r`nX=222`r`nY=626`r`nStringAlign=Right`r`nFontFace=#FontMono#`r`nFontSize=#FontSizeBody#`r`nFontColor=#ColorTextPrimary#`r`nAntiAlias=1`r`nAutoScale=1`r`nNumOfDecimals=0`r`nText=%1B / %2B`r`n`r`n[MeterDiskBarC]`r`nTransformationMatrix=(#UiScale#);0;0;(#UiScale#);0;0`r`nDynamicVariables=1`r`nMeter=Bar`r`nMeasureName=MeasureFreeC`r`nX=18`r`nY=640`r`nW=204`r`nH=3`r`nBarColor=#ColorBarFill#`r`nSolidColor=#ColorBarBg#`r`nBarOrientation=Horizontal`r`nFlip=1`r`n"
-    [System.IO.File]::WriteAllText((Join-Path $stagingCache "disks-generated.default.inc"), $cleanDisksGen, [System.Text.Encoding]::GetEncoding(1251))
+    $sourceDisksDefault = Join-Path $skinsSource "@Resources\Cache\disks-generated.default.inc"
+    if (Test-Path $sourceDisksDefault) {
+        Copy-Item -Path $sourceDisksDefault -Destination (Join-Path $stagingCache "disks-generated.default.inc") -Force
+    }
 
     # КРИТИЧЕСКИ ВАЖНО: Удаляем disks-generated.inc и disks-vars.inc из архива,
     # чтобы установщик Rainmeter не затирал дисковую топологию пользователя при обновлении

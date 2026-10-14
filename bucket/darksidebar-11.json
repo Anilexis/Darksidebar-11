@@ -1,10 +1,10 @@
 {
-    "version": "1.0.12",
+    "version": "1.0.13",
     "description": "Modern hardware-accelerated multifunctional desktop sidebar for Rainmeter on Windows 11",
     "homepage": "https://github.com/Anilexis/Darksidebar-11",
     "license": "MIT",
-    "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v1.0.12/Darksidebar-11-v1.0.12.rmskin",
-    "hash": "A6CD364367A3864472ED6B32F3361E0C14FE7AD19BF01591B8DC345E6942F511",
+    "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v1.0.13/Darksidebar-11-v1.0.13.rmskin",
+    "hash": "1CDC6877CA40C40AD7A8E7D75F44772FBAA8F02B05D578B953691A0B23C7B4CC",
     "installer": {
         "script": [
             "Add-Type -AssemblyName System.IO.Compression.FileSystem",
