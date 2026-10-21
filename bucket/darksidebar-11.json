@@ -4,7 +4,7 @@
     "homepage": "https://github.com/Anilexis/Darksidebar-11",
     "license": "MIT",
     "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v1.1.0/Darksidebar-11-v1.1.0.rmskin",
-    "hash": "BF90FC4189E57D0CB21921B8C745F15781DB73B5601F9F2DAB8F6ACCF2A806BF",
+    "hash": "2B349E2B21D009EA71FB551AEB9D6190077EFC3B76D2CA60F6A791072B77A552",
     "installer": {
         "script": [
             "# 1-Click mutual uninstallation of competing channel while preserving user settings",
