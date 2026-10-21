@@ -9,6 +9,15 @@ local monthsEnShort = {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 }
 
+local headerMeters = {
+    "MeterHeaderMon", "MeterHeaderTue", "MeterHeaderWed",
+    "MeterHeaderThu", "MeterHeaderFri", "MeterHeaderSat", "MeterHeaderSun"
+}
+local labelsRuMon = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"}
+local labelsRuSun = {"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"}
+local labelsEnMon = {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"}
+local labelsEnSun = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
+
 local defaultRuHolidays = {
     ["01-01"] = "Новый год", ["01-02"] = "Новогодние каникулы", ["01-03"] = "Новогодние каникулы",
     ["01-04"] = "Новогодние каникулы", ["01-05"] = "Новогодние каникулы", ["01-06"] = "Новогодние каникулы",
@@ -105,6 +114,16 @@ function NextMonth()
     RefreshGrid()
 end
 
+
+function GetViewDate()
+    return viewYear, viewMonth
+end
+
+function SetViewDate(y, m)
+    viewYear = tonumber(y) or viewYear
+    viewMonth = tonumber(m) or viewMonth
+end
+
 function ResetToday()
     local now = os.date("*t")
     todayYear, todayMonth, todayDay = now.year, now.month, now.day
@@ -123,14 +142,10 @@ function RefreshGrid()
     local titleText = string.format("%s %d", months[viewMonth], viewYear)
     SKIN:Bang("!SetOption", "MeterMonthYear", "Text", titleText)
 
-    -- Update column headers dynamically
-    local headers = {
-        "MeterHeaderMon", "MeterHeaderTue", "MeterHeaderWed",
-        "MeterHeaderThu", "MeterHeaderFri", "MeterHeaderSat", "MeterHeaderSun"
-    }
-    local labelsRu = isMondayFirst and {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"} or {"Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"}
-    local labelsEn = isMondayFirst and {"Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"} or {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"}
-    local labels = (lang == "English") and labelsEn or labelsRu
+    -- Update column headers dynamically (reusing module-level tables)
+    local labels = (lang == "English")
+        and (isMondayFirst and labelsEnMon or labelsEnSun)
+        or (isMondayFirst and labelsRuMon or labelsRuSun)
 
     for i = 1, 7 do
         local isWk
@@ -140,8 +155,8 @@ function RefreshGrid()
             isWk = (i == 1 or i == 7)
         end
         local c = isWk and "#ColorToday#" or "#ColorTextMuted#"
-        SKIN:Bang("!SetOption", headers[i], "Text", labels[i])
-        SKIN:Bang("!SetOption", headers[i], "FontColor", c)
+        SKIN:Bang("!SetOption", headerMeters[i], "Text", labels[i])
+        SKIN:Bang("!SetOption", headerMeters[i], "FontColor", c)
     end
 
     local firstCol = getFirstDayCol(viewYear, viewMonth, isMondayFirst)

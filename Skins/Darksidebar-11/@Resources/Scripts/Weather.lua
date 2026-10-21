@@ -81,12 +81,18 @@ local function GetWindDirection(deg, lang)
 end
 
 local function parse_json(str)
+    if not str or type(str) ~= "string" or #str == 0 then return nil end
     local pos = 1
     local len = #str
 
     local function skip_whitespace()
-        while pos <= len and str:sub(pos, pos):match("%s") do
-            pos = pos + 1
+        while pos <= len do
+            local b = str:byte(pos)
+            if b == 32 or b == 9 or b == 10 or b == 13 then
+                pos = pos + 1
+            else
+                break
+            end
         end
     end
 
@@ -96,25 +102,32 @@ local function parse_json(str)
         pos = pos + 1
         local start = pos
         while pos <= len do
-            local c = str:sub(pos, pos)
-            if c == '"' then
+            local b = str:byte(pos)
+            if b == 34 then
                 local s = str:sub(start, pos - 1)
                 pos = pos + 1
                 return s
-            elseif c == '\\' then
+            elseif b == 92 then
                 pos = pos + 2
             else
                 pos = pos + 1
             end
         end
-        return ""
+        return str:sub(start, len)
     end
 
     local function parse_number()
         local start = pos
-        if str:sub(pos, pos) == '-' then pos = pos + 1 end
-        while pos <= len and str:sub(pos, pos):match("[0-9%.eE%+%-]") do
+        if pos <= len and str:byte(pos) == 45 then
             pos = pos + 1
+        end
+        while pos <= len do
+            local b = str:byte(pos)
+            if (b >= 48 and b <= 57) or b == 46 or b == 101 or b == 69 or b == 43 or b == 45 then
+                pos = pos + 1
+            else
+                break
+            end
         end
         return tonumber(str:sub(start, pos - 1))
     end
@@ -123,19 +136,25 @@ local function parse_json(str)
         pos = pos + 1
         local arr = {}
         skip_whitespace()
-        if pos <= len and str:sub(pos, pos) == ']' then
+        if pos <= len and str:byte(pos) == 93 then
             pos = pos + 1
             return arr
         end
         while pos <= len do
             table.insert(arr, parse_value())
             skip_whitespace()
-            local c = str:sub(pos, pos)
-            if c == ']' then
+            if pos > len then break end
+            local b = str:byte(pos)
+            if b == 93 then
                 pos = pos + 1
                 return arr
-            elseif c == ',' then
+            elseif b == 44 then
                 pos = pos + 1
+                skip_whitespace()
+                if pos <= len and str:byte(pos) == 93 then
+                    pos = pos + 1
+                    return arr
+                end
             else
                 break
             end
@@ -147,30 +166,40 @@ local function parse_json(str)
         pos = pos + 1
         local obj = {}
         skip_whitespace()
-        if pos <= len and str:sub(pos, pos) == '}' then
+        if pos <= len and str:byte(pos) == 125 then
             pos = pos + 1
             return obj
         end
         while pos <= len do
             skip_whitespace()
-            if pos <= len and str:sub(pos, pos) == '}' then
+            if pos > len then break end
+            if str:byte(pos) == 125 then
                 pos = pos + 1
                 return obj
             end
+            if str:byte(pos) ~= 34 then
+                break
+            end
             local key = parse_string()
             skip_whitespace()
-            if str:sub(pos, pos) == ':' then
+            if pos <= len and str:byte(pos) == 58 then
                 pos = pos + 1
             end
             skip_whitespace()
             obj[key] = parse_value()
             skip_whitespace()
-            local c = str:sub(pos, pos)
-            if c == '}' then
+            if pos > len then break end
+            local b = str:byte(pos)
+            if b == 125 then
                 pos = pos + 1
                 return obj
-            elseif c == ',' then
+            elseif b == 44 then
                 pos = pos + 1
+                skip_whitespace()
+                if pos <= len and str:byte(pos) == 125 then
+                    pos = pos + 1
+                    return obj
+                end
             else
                 break
             end
@@ -181,22 +210,22 @@ local function parse_json(str)
     parse_value = function()
         skip_whitespace()
         if pos > len then return nil end
-        local c = str:sub(pos, pos)
-        if c == '{' then
+        local b = str:byte(pos)
+        if b == 123 then
             return parse_object()
-        elseif c == '[' then
+        elseif b == 91 then
             return parse_array()
-        elseif c == '"' then
+        elseif b == 34 then
             return parse_string()
-        elseif c:match("[0-9%-]") then
+        elseif (b >= 48 and b <= 57) or b == 45 then
             return parse_number()
-        elseif str:sub(pos, pos + 3) == 'true' then
+        elseif b == 116 and str:sub(pos, pos + 3) == 'true' then
             pos = pos + 4
             return true
-        elseif str:sub(pos, pos + 4) == 'false' then
+        elseif b == 102 and str:sub(pos, pos + 4) == 'false' then
             pos = pos + 5
             return false
-        elseif str:sub(pos, pos + 3) == 'null' then
+        elseif b == 110 and str:sub(pos, pos + 3) == 'null' then
             pos = pos + 4
             return nil
         else
@@ -328,3 +357,6 @@ function Parse()
         end
     end
 end
+
+Weather = Weather or {}
+Weather.parse_json = parse_json

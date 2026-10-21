@@ -1,8 +1,13 @@
 # detect-weather-ip.ps1
 # Автоопределение города, координат и страны по текущему IP
+param(
+    [string]$SettingsFilePath = "",
+    [string]$PersistentConfigDir = ""
+)
+
 $scriptsDir = $PSScriptRoot
 $resourcesDir = Split-Path $scriptsDir
-$settingsPath = Join-Path $resourcesDir "Settings.inc"
+$settingsPath = if ($SettingsFilePath) { $SettingsFilePath } else { Join-Path $resourcesDir "Settings.inc" }
 
 $city = ""
 $lat = 0.0
@@ -56,7 +61,7 @@ if ($city -and $lat -ne 0.0) {
 
         [System.IO.File]::WriteAllText($settingsPath, $content, $cp1251)
 
-        $persistentDir = "$env:APPDATA\Rainmeter\Darksidebar11-Config"
+        $persistentDir = if ($PersistentConfigDir) { $PersistentConfigDir } else { "$env:APPDATA\Rainmeter\Darksidebar11-Config" }
         if (-not (Test-Path $persistentDir)) { New-Item -ItemType Directory -Path $persistentDir -Force | Out-Null }
         Copy-Item $settingsPath (Join-Path $persistentDir "Settings.inc") -Force
 
@@ -64,7 +69,7 @@ if ($city -and $lat -ne 0.0) {
 
         # Обновляем праздники для определенной страны
         $fetchHolidays = Join-Path $scriptsDir "fetch-holidays.ps1"
-        if (Test-Path $fetchHolidays) {
+        if ((Test-Path $fetchHolidays) -and (-not $SettingsFilePath)) {
             & pwsh -NoProfile -ExecutionPolicy Bypass -File $fetchHolidays -CountryCode $countryCode
         }
     }

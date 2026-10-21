@@ -35,7 +35,7 @@ if ($RebuildPlugin -or -not (Test-Path "$skinsSource\@Resources\Plugins\NvBridge
 
 # 2. Подготовка временной структуры дистрибутива
 Write-Host "[2/4] Формирование структуры дистрибутива..." -ForegroundColor Yellow
-$tempStaging = Join-Path $env:TEMP "Darksidebar_Staging_$([Guid]::NewGuid().ToString('N'))"
+$tempStaging = Join-Path ([System.IO.Path]::GetTempPath()) "Darksidebar_Staging_$([Guid]::NewGuid().ToString('N'))"
 $stagingSkins = Join-Path $tempStaging "Skins\$skinName"
 $stagingPlugins64 = Join-Path $tempStaging "Plugins\64bit"
 

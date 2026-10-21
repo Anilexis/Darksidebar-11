@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -150,6 +151,7 @@ namespace NvBridgePlugin {
         static volatile bool isRunning = false;
         static int refCount = 0;
         static readonly object lockObj = new object();
+        static readonly HttpClient lhmClient = new HttpClient { Timeout = TimeSpan.FromMilliseconds(350) };
 
         static string QueryProcessorName() {
             try {
@@ -403,20 +405,25 @@ namespace NvBridgePlugin {
                     // 3. Fallback to LibreHardwareMonitor web server if CPU temp not available
                     if (CpuTemp <= 0) {
                         try {
-                            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMilliseconds(350) };
-                            string json = client.GetStringAsync("http://127.0.0.1:8085/data.json").GetAwaiter().GetResult();
-                            int idx = json.IndexOf("\"CPU Package\"");
-                            if (idx < 0) idx = json.IndexOf("\"Core Average\"");
-                            if (idx < 0) idx = json.IndexOf("\"CPU Total\"");
-                            if (idx >= 0) {
-                                int valIdx = json.IndexOf("\"Value\":", idx);
-                                if (valIdx >= 0 && valIdx - idx < 200) {
-                                    int start = json.IndexOf('"', valIdx + 8) + 1;
-                                    int end = json.IndexOf('°', start);
-                                    if (start > 0 && end > start) {
-                                        string str = json.Substring(start, end - start).Trim().Replace(',', '.');
-                                        if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double t) && t > 0) {
-                                            CpuTemp = Math.Round(t);
+                            using var req = new HttpRequestMessage(HttpMethod.Get, "http://127.0.0.1:8085/data.json");
+                            using var resp = lhmClient.Send(req);
+                            if (resp.IsSuccessStatusCode) {
+                                using var stream = resp.Content.ReadAsStream();
+                                using var reader = new StreamReader(stream, Encoding.UTF8);
+                                string json = reader.ReadToEnd();
+                                int idx = json.IndexOf("\"CPU Package\"");
+                                if (idx < 0) idx = json.IndexOf("\"Core Average\"");
+                                if (idx < 0) idx = json.IndexOf("\"CPU Total\"");
+                                if (idx >= 0) {
+                                    int valIdx = json.IndexOf("\"Value\":", idx);
+                                    if (valIdx >= 0 && valIdx - idx < 200) {
+                                        int start = json.IndexOf('"', valIdx + 8) + 1;
+                                        int end = json.IndexOf('°', start);
+                                        if (start > 0 && end > start) {
+                                            string str = json.Substring(start, end - start).Trim().Replace(',', '.');
+                                            if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double t) && t > 0) {
+                                                CpuTemp = Math.Round(t);
+                                            }
                                         }
                                     }
                                 }
@@ -443,6 +450,7 @@ namespace NvBridgePlugin {
             if (nvmlInitialized) {
                 try { NvmlShutdown(); } catch { }
             }
+            try { lhmClient.Dispose(); } catch { }
         }
     }
 
