@@ -121,6 +121,7 @@
             "}"
         ]
     },
+    "notes": "To test the preview/beta channel: 'scoop uninstall darksidebar-11' then 'scoop install darksidebar-11-beta'",
     "checkver": "github",
     "autoupdate": {
         "url": "https://github.com/Anilexis/Darksidebar-11/releases/download/v$version/Darksidebar-11-v$version.rmskin"

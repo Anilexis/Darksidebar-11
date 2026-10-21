@@ -1,0 +1,104 @@
+{
+  "lists": [
+    {
+      "id": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+      "title": "Backlog",
+      "cards": [
+        {
+          "id": "3a5b7bcb-1427-4649-ac8d-93a5110baef8",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Missing test for MeasureInstance.GetStrin",
+          "description": "Description\n\nMeasureInstance.GetString public API lacks testing for correct hardware data formatting.\nLocation\n\nsrc/NvBridgePlugin/Plugin.cs:477\nRationale\n\nSimple pure function formatting static data; straightforward to test by setting static fields and asserting outputs.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "8ae3e8da-301b-4840-88a3-e74bba89a8d5",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Missing edge case tests in parse_json",
+          "description": "Description\n\nThe parse_json function in Weather.lua lacks coverage for invalid or edge-case JSON inputs (e.g., malformed strings or arrays).\nLocation\n\nSkins/Darksidebar-11/@Resources/Scripts/Weather.lua:67\nRationale\n\nSelf-contained Lua function without external dependencies; very easy to write assertions for various string inputs.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "3153e0ca-edbf-47c0-b9dc-0b9dca622e71",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Unnecessary HttpClient Instantiation in Loop",
+          "description": "Description\n\nHttpClient is being instantiated inside a high-frequency polling loop, which can lead to socket exhaustion.\nLocation\n\nsrc/NvBridgePlugin/Plugin.cs:406\nRationale\n\nInstantiating HttpClient inside a while loop is a known anti-pattern. A single static HttpClient should be reused. This is a very localized, <10 line change.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "d0122377-f830-4806-8811-cfeefa1fd51d",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Redundant Table Allocations in UI Loop",
+          "description": "Description\n\nTables for day names are allocated inside the RefreshGrid function that gets called repeatedly.\nLocation\n\nSkins/Darksidebar-11/@Resources/Scripts/Calendar.lua:131\nRationale\n\nMoving the labelsRu and labelsEn tables outside of the RefreshGrid function would avoid allocating them every time the grid refreshes. Very easy fix, high confidence.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "81978fb2-c892-4de9-8487-7034615a09ad",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Blocking Sync-Over-Async Call",
+          "description": "Description\n\nSynchronous GetAwaiter().GetResult() is used on an async network request inside the monitoring loop.\nLocation\n\nsrc/NvBridgePlugin/Plugin.cs:407\nRationale\n\nBlocking the thread with GetAwaiter().GetResult() can cause thread pool starvation. It should either be truly async or use a synchronous API if available, although within a dedicated Thread this is less critical, it's still blocking.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "1f605623-ea36-48b1-ba8a-97cd39abebe4",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Missing tests for NextMonth and PrevMonth logic",
+          "description": "Description\n\nThe NextMonth and PrevMonth functions in Calendar.lua lack unit tests for year wraparound logic.\nLocation\n\nSkins/Darksidebar-11/@Resources/Scripts/Calendar.lua:88\nRationale\n\nFunctions modify global state (viewMonth, viewYear). Easy to mock the state and verify transitions, though global state makes it slightly harder than pure functions.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "0a999cd0-0dde-4128-abde-5a52fb2f797e",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Suboptimal String Substring in Tight Loop",
+          "description": "Description\n\nRepeated use of `str:sub(pos, pos)` for single character extraction inside the JSON parser loops.\nLocation\n\nSkins/Darksidebar-11/@Resources/Scripts/Weather.lua:88\nRationale\n\nThe custom JSON parser uses `str:sub(pos, pos)` constantly to read the next character. Lua string allocations for every single character are slow. Pre-converting the string to an array of characters (or bytes via `str:byte(pos)`) would be faster.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        },
+        {
+          "id": "33036813-11c7-4078-a369-72df8e27cc14",
+          "listId": "6bfd7fd4-b820-40c3-a410-23f52a8ad0e5",
+          "title": "Missing fallback test for Invoke-RestMethod",
+          "description": "Description\n\ndetect-weather-ip.ps1 lacks tests ensuring that if both API endpoints fail, the script fails gracefully without throwing unhandled exceptions.\nLocation\n\nSkins/Darksidebar-11/@Resources/Scripts/detect-weather-ip.ps1:13\nRationale\n\nTesting PowerShell network calls requires Pester and mocking `Invoke-RestMethod`, which might require extra setup not currently in the project.",
+          "labels": [],
+          "checkboxes": [],
+          "comments": []
+        }
+      ]
+    },
+    {
+      "id": "69bb2c09-47ea-4318-82f7-a10d97546d0f",
+      "title": "ToDo",
+      "cards": []
+    },
+    {
+      "id": "7205952d-1dd7-48cf-aef8-a7ad2822b8fc",
+      "title": "Doing",
+      "cards": []
+    },
+    {
+      "id": "0120a478-822a-47ad-8f05-4159f822bd2a",
+      "title": "Done",
+      "cards": []
+    }
+  ],
+  "archive": {
+    "lists": [],
+    "cards": []
+  },
+  "settings": {
+    "labels": []
+  }
+}
