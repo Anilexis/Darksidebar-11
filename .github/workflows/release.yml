@@ -33,8 +33,10 @@ jobs:
           } else {
               $ver = "1.0.0"
           }
-          Write-Host "Building version: $ver"
+          $pkgName = if ($tag -match '-(beta|rc|alpha)') { "darksidebar-11-beta" } else { "darksidebar-11" }
+          Write-Host "Building version: $ver (Package: $pkgName)"
           "VERSION=$ver" >> $env:GITHUB_OUTPUT
+          "PKG_NAME=$pkgName" >> $env:GITHUB_OUTPUT
 
       - name: Compile NativeAOT NvBridge Plugin
         shell: pwsh
@@ -73,13 +75,17 @@ jobs:
             2. Download `Darksidebar-11-v${{ steps.get_version.outputs.VERSION }}.rmskin` below.
             3. Double-click the downloaded file and click **Install** in Rainmeter Skin Installer.
 
+            ### Install & Update via UniGetUI (1-Click)
+            1. In **UniGetUI**, refresh software sources.
+            2. Search for `${{ steps.get_version.outputs.PKG_NAME }}` and click **Install**.
+
             ### Install & Update via Scoop
             ```powershell
             scoop bucket add darksidebar https://github.com/Anilexis/Darksidebar-11
-            scoop install darksidebar-11
+            scoop install ${{ steps.get_version.outputs.PKG_NAME }}
             
             # To update later:
-            scoop update darksidebar-11
+            scoop update ${{ steps.get_version.outputs.PKG_NAME }}
             ```
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') || contains(github.ref_name, '-alpha') }}
