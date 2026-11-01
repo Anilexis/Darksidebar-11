@@ -101,4 +101,18 @@ skinVariables["CalendarFirstDay"] = "Monday"
 RefreshGrid()
 assert_eq(#bangs > 10, true, "RefreshGrid generates UI update bangs for Russian/Monday")
 
+-- Test 10: Update() advances viewYear and viewMonth when month rolls over
+SetViewDate(2026, 10)
+local origDate = os.date
+os.date = function(fmt)
+    if fmt == "*t" then
+        return { year = 2026, month = 11, day = 1, hour = 0, min = 0, sec = 1 }
+    end
+    return origDate(fmt)
+end
+Update()
+y, m = GetViewDate()
+assert_eq(y, 2026, "Update advances view year to 2026")
+assert_eq(m, 11, "Update advances view month from 10 to 11 on month rollover")
+os.date = origDate
 print(string.format("All %d Calendar.lua assertions PASSED successfully!", testCount))

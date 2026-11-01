@@ -88,8 +88,16 @@ end
 function Update()
     local now = os.date("*t")
     if now.day ~= todayDay or now.month ~= todayMonth or now.year ~= todayYear then
+        local wasViewingCurrent = (viewYear == todayYear and viewMonth == todayMonth)
+        local monthChanged = (now.month ~= todayMonth or now.year ~= todayYear)
+
         todayYear, todayMonth, todayDay = now.year, now.month, now.day
-        loadHolidays(todayYear)
+
+        if wasViewingCurrent or monthChanged then
+            viewYear, viewMonth = todayYear, todayMonth
+        end
+
+        loadHolidays(viewYear)
         RefreshGrid()
     end
 end
