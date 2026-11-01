@@ -115,4 +115,21 @@ y, m = GetViewDate()
 assert_eq(y, 2026, "Update advances view year to 2026")
 assert_eq(m, 11, "Update advances view month from 10 to 11 on month rollover")
 os.date = origDate
+-- Test 11: UTF-8 BOM stripping compiles cleanly without syntax error
+local testBomPath = skinVariables['@'] .. 'Cache/test_bom_holidays.lua'
+local f = io.open(testBomPath, 'w')
+if f then
+    f:write(string.char(239, 187, 191) .. "local M = { year = 2026, days = { ['2026-01-01'] = 'Test Holiday' } }\nreturn M\n")
+    f:close()
+    local rf = io.open(testBomPath, 'r')
+    local content = rf:read('*all')
+    rf:close()
+    if content:sub(1, 3) == string.char(239, 187, 191) then content = content:sub(4) end
+    local chunk, err = loadstring(content, testBomPath)
+    assert_eq(err == nil, true, 'Chunk should compile cleanly after BOM stripping')
+    local ok, res = pcall(chunk)
+    assert_eq(ok, true, 'Executing compiled chunk should succeed')
+    assert_eq(type(res.days), 'table', 'Result days table is valid')
+    os.remove(testBomPath)
+end
 print(string.format("All %d Calendar.lua assertions PASSED successfully!", testCount))

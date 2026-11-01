@@ -33,13 +33,27 @@ local lastLoadedYear = 0
 local function loadHolidays(year)
     local resPath = SKIN:GetVariable("@", "")
     local path = resPath .. "Cache/holidays.lua"
-    local ok, h = pcall(dofile, path)
-    if ok and type(h) == "table" and type(h.days) == "table" then
-        holidaysData = h.days
-        lastLoadedYear = h.year or year
-    else
-        holidaysData = nil
+    local f = io.open(path, "r")
+    if f then
+        local content = f:read("*all")
+        f:close()
+        if content and #content > 0 then
+            -- Strip UTF-8 BOM if present (\xEF\xBB\xBF)
+            if content:sub(1, 3) == "\239\187\191" then
+                content = content:sub(4)
+            end
+            local chunk = loadstring(content, path)
+            if chunk then
+                local ok, h = pcall(chunk)
+                if ok and type(h) == "table" and type(h.days) == "table" then
+                    holidaysData = h.days
+                    lastLoadedYear = h.year or year
+                    return
+                end
+            end
+        end
     end
+    holidaysData = nil
 end
 
 local viewYear = 2026

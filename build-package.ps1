@@ -94,7 +94,7 @@ if (Test-Path $stagingCache) {
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "hardware-data.inc"), "[Variables]`r`n", [System.Text.Encoding]::GetEncoding(1251))
     [System.IO.File]::WriteAllText((Join-Path $stagingCache "weather-search-status.inc"), "[Variables]`r`nWeatherSearchStatus=`r`nWeatherSearchFound=0`r`n", [System.Text.Encoding]::GetEncoding(1251))
-    [System.IO.File]::WriteAllText((Join-Path $stagingCache "holidays.lua"), "-- holidays cache`r`nreturn {}`r`n", [System.Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText((Join-Path $stagingCache "holidays.lua"), "-- holidays cache`r`nreturn {}`r`n", [System.Text.Encoding]::GetEncoding(1251))
 }
 
 # 3. Формируем метаданные Rainmeter.tag
